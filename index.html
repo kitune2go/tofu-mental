@@ -69,6 +69,29 @@ h1 .b{display:block;font-size:clamp(44px,13vw,82px);color:var(--tofu);letter-spa
 .pb{pointer-events:auto;touch-action:none;width:68px;height:68px;border-radius:50%;border:2px solid rgba(233,237,242,.35);background:rgba(16,22,31,.55);color:var(--ink);font:700 22px var(--f-ui);display:flex;align-items:center;justify-content:center}
 .pb.jump{width:84px;height:84px;font-size:15px;border-color:rgba(240,185,43,.7);color:var(--hazard)}
 .pb.on{background:rgba(240,185,43,.3)}
+.intro{position:fixed;inset:0;z-index:9;pointer-events:none}
+.intro .ibk{position:absolute;inset:0;background:#07090d}
+.intro .ialarm{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;opacity:0;transition:opacity .25s}
+.intro .ialarm b{font-family:var(--f-display);font-weight:400;font-size:clamp(64px,20vw,140px);color:var(--hazard);font-variant-numeric:tabular-nums;line-height:1}
+.intro .ialarm span{font-size:15px;letter-spacing:.3em;color:var(--muted)}
+.intro .ialarm.on{opacity:1}
+.intro .ialarm.blink b{opacity:.25}
+.intro .icap{position:absolute;left:16px;right:16px;bottom:22%;text-align:center;font-family:var(--f-display);font-size:clamp(26px,7vw,48px);color:var(--tofu);text-shadow:0 3px 0 rgba(0,0,0,.55),0 0 24px rgba(0,0,0,.6);opacity:0;transform:translateY(10px);transition:opacity .3s,transform .3s;text-wrap:balance}
+.intro .icap.on{opacity:1;transform:none}
+.intro .rec{position:absolute;left:50%;top:14%;transform:translateX(-50%);width:min(240px,62vw);background:#3a4250;border:2px solid #556070;border-radius:8px;padding:10px 12px 16px;opacity:0;transition:opacity .3s;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+.intro .rec.on{opacity:1}
+.intro .rec small{display:block;font-size:10px;letter-spacing:.25em;color:#c9d2dc}
+.intro .rec .slot{margin-top:8px;height:8px;background:#0b0e14;border-radius:2px}
+.intro .tcard{position:absolute;left:50%;top:22%;width:min(180px,46vw);transform:translate(-50%,120vh);background:#f3ead2;color:#2a2620;border-radius:4px;padding:10px 12px;font-size:12px;line-height:1.7;box-shadow:0 8px 24px rgba(0,0,0,.45);transition:transform .7s cubic-bezier(.2,.8,.2,1)}
+.intro .tcard.in{transform:translate(-50%,0)}
+.intro .tcard.punch{transform:translate(-50%,-14px)}
+.intro .tcard h4{margin:0 0 4px;font-size:13px;letter-spacing:.2em;border-bottom:2px solid #c8372d;color:#c8372d}
+.intro .tcard .row{display:flex;justify-content:space-between;border-bottom:1px dashed #cdbf9a;font-variant-numeric:tabular-nums}
+.intro .tcard .stamp{color:#c8372d;font-weight:700;opacity:0;transform:scale(1.8);transition:opacity .15s,transform .15s}
+.intro .tcard .stamp.on{opacity:1;transform:none}
+.intro .skip{position:absolute;right:16px;bottom:calc(env(safe-area-inset-bottom,0px) + 16px);pointer-events:auto;font:700 13px var(--f-ui);color:var(--ink);background:rgba(16,22,31,.75);border:1px solid var(--line);border-radius:999px;padding:8px 16px;cursor:pointer}
+.intro .skip:focus-visible{outline:2px solid var(--hazard);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){.intro .icap,.intro .tcard,.intro .ialarm{transition:none}}
 @media (pointer:coarse){.pad{display:flex}}
 @media (prefers-reduced-motion:reduce){.fill,.toast{transition:none}}
 </style>
@@ -98,6 +121,20 @@ h1 .b{display:block;font-size:clamp(44px,13vw,82px);color:var(--tofu);letter-spa
   <button class="pb jump" id="bj" type="button">ジャンプ</button>
 </div>
 
+<div class="intro" id="intro" hidden>
+  <div class="ibk" id="ibk"></div>
+  <div class="ialarm" id="ialarm"><b>07:00</b><span>ジリリリリリ……</span></div>
+  <div class="rec" id="rec"><small>TIME RECORDER</small><div class="slot"></div></div>
+  <div class="tcard" id="tcard">
+    <h4>タイムカード</h4>
+    <div class="row"><span>氏名</span><span>豆腐</span></div>
+    <div class="row"><span>昨日</span><span>08:00〜17:00</span></div>
+    <div class="row"><span>一昨日</span><span>08:00〜17:00</span></div>
+    <div class="row"><span>今日</span><span class="stamp" id="stamp">出 08:00</span></div>
+  </div>
+  <div class="icap" id="icap"></div>
+  <button class="skip" id="skip" type="button">スキップ ▶</button>
+</div>
 <div class="overlay" id="ovTitle">
   <div class="card">
     <div class="kicker">第一工程・夜勤ライン</div>
@@ -363,6 +400,8 @@ function sfx(k){
     else if(k==='slam'){o.type='square';o.frequency.setValueAtTime(80,t);o.frequency.exponentialRampToValueAtTime(35,t+.18);env(.07,.2)}
     else if(k==='pick'){o.type='triangle';o.frequency.setValueAtTime(660,t);o.frequency.setValueAtTime(990,t+.08);env(.09,.22)}
     else if(k==='die'){o.type='sawtooth';o.frequency.setValueAtTime(320,t);o.frequency.exponentialRampToValueAtTime(40,t+.9);env(.1,.95)}
+    else if(k==='alarm'){o.type='square';o.frequency.setValueAtTime(1250,t);env(.05,.16)}
+    else if(k==='stamp'){o.type='square';o.frequency.setValueAtTime(140,t);o.frequency.exponentialRampToValueAtTime(50,t+.12);env(.14,.16)}
     else if(k==='clear'){o.type='triangle';[523,659,784,1046].forEach((f,i)=>o.frequency.setValueAtTime(f,t+i*.12));env(.1,.6)}
   }catch(e){}
 }
@@ -405,7 +444,8 @@ const LK=['ArrowLeft','KeyA'],RK=['ArrowRight','KeyD'],JK=['Space','ArrowUp','Ke
 addEventListener('keydown',e=>{
   if(LK.includes(e.code))K.l=true; if(RK.includes(e.code))K.r=true;
   if(JK.includes(e.code)){e.preventDefault();if(!e.repeat)jumpQ=.15}
-  if((e.code==='Enter'||e.code==='Space')&&state!=='play'&&!e.repeat&&deadT<=0){e.preventDefault();start()}
+  if((e.code==='Enter'||e.code==='Space')&&!e.repeat&&state==='intro'){e.preventDefault();endIntro();return}
+  if((e.code==='Enter'||e.code==='Space')&&state!=='play'&&!e.repeat&&deadT<=0){e.preventDefault();state==='title'?startOrIntro():start()}
 });
 addEventListener('keyup',e=>{if(LK.includes(e.code))K.l=false;if(RK.includes(e.code))K.r=false});
 function hold(id,on,off){const b=$(id);
@@ -429,7 +469,57 @@ function start(){
   bgmPlay(true);
   state='play'; toast('出勤しました。定時まで踏ん張ろう','');
 }
-$('#startBtn').addEventListener('click',start);
+function beginPlay(restartBgm){
+  playT=0; wordT=3; tofu.visible=true; lastHud='';
+  if(restartBgm)bgmPlay(true);
+  state='play'; toast('第一工程、開始。定時まで踏ん張ろう','');
+}
+function startOrIntro(){
+  if(!ac){try{ac=new (window.AudioContext||window.webkitAudioContext)()}catch(e){}}
+  if(ac&&ac.state==='suspended')ac.resume();
+  if(!introSeen)runIntro(); else start();
+}
+/* ---------- opening (plays before stage 1, once per visit) ---------- */
+let introSeen=false,introT=0,introFlags={},dropVy=0,capIdx=-1;
+const CAPS=[[1.7,3.1,'今日も、出勤。'],[5.5,6.7,'プレス機は、待ってくれない。'],[6.7,7.9,'言葉は、飛んでくる。'],[7.9,9.0,'落ちれば、石臼。'],[9.1,10.7,'豆腐、投入。']];
+function once(k){if(introFlags[k])return false;introFlags[k]=true;return true}
+function runIntro(){
+  resetPlayer(); P.y=9; dropVy=0; gt=0; playT=0; wordT=3; clearWords();
+  for(const p of pickups){p.taken=false;p.g.visible=true}
+  $('#ovTitle').hidden=true; $('#ovEnd').hidden=true; $('#intro').hidden=false;
+  introT=0; introFlags={}; capIdx=-1; $('#icap').className='icap'; $('#tcard').className='tcard'; $('#stamp').className='stamp'; $('#rec').className='rec'; $('#ibk').style.opacity=1;
+  bgmPlay(true); bgmDuck(.3); state='intro';
+}
+function introStep(dt){
+  introT+=dt; const t=introT;
+  const al=$('#ialarm'); al.className='ialarm'+(t<1.6?' on':'')+(t<1.6&&Math.floor(t*6)%2?' blink':'');
+  for(const k of[0,.4,.8,1.2])if(t>=k&&once('a'+k))sfx('alarm');
+  $('#ibk').style.opacity=t<5?1:t<5.7?1-(t-5)/.7:0;
+  $('#rec').className='rec'+(t>3.1&&t<5.2?' on':'');
+  const tc=$('#tcard'); tc.className='tcard'+(t>3.2&&t<5.2?(t>4.15&&t<4.35?' punch':' in'):'');
+  if(t>=4.25&&once('stamp')){$('#stamp').className='stamp on';sfx('stamp')}
+  let ci=-1; CAPS.forEach((c,i)=>{if(t>=c[0]&&t<c[1])ci=i});
+  if(ci!==capIdx){capIdx=ci;const el=$('#icap');if(ci<0)el.className='icap';else{el.textContent=CAPS[ci][2];el.className='icap on'}}
+  if(t>=5&&once('bgm'))bgmDuck(.55);
+  if(t>=9){dropVy-=32*dt;P.y=Math.max(0,P.y+dropVy*dt);if(P.y<=0&&once('land')){P.sq=.45;burst(0,.2,14,4);sfx('slam');shake=.35}}
+  if(t>=10.8)endIntro();
+}
+function endIntro(){
+  if(state!=='intro')return;
+  $('#intro').hidden=true; introSeen=true; jumpQ=0; P.y=0; camX=P.x+2.5; camY=2;
+  bgmDuck(.55); beginPlay(false);
+}
+$('#skip').addEventListener('click',endIntro);
+function introCamera(){
+  const t=introT;
+  if(t<5){camera.position.set(70,6,camDist);camera.lookAt(70,1.5,0);return}
+  const u=Math.min(1,(t-5)/4), e=u<.5?2*u*u:1-Math.pow(-2*u+2,2)/2;
+  const cx=70+(2.5-70)*e;
+  camera.position.set(cx,6.4-2*e,camDist*(1.25-.25*e));
+  camera.lookAt(cx-3*(1-e),1.6+.4*e,0);
+  sun.position.set(cx+6,15,10); sun.target.position.set(cx,0,0); amb.position.set(cx,4,4);
+}
+$('#startBtn').addEventListener('click',startOrIntro);
 $('#retryBtn').addEventListener('click',start);
 
 function hurt(n,label){
@@ -552,7 +642,8 @@ const clk=new THREE.Clock();
 function frame(){
   requestAnimationFrame(frame);
   const dt=Math.min(clk.getDelta(),1/30);
-  if(state==='play'||state==='title')gt+=dt;
+  if(state==='play'||state==='title'||state==='intro')gt+=dt;
+  if(state==='intro')introStep(dt);
   if(state==='play')update(dt);
   // presses
   for(const p of presses){
@@ -575,19 +666,21 @@ function frame(){
     const jig=P.mental<35?Math.sin(gt*40)*.015:0;
     const sy=h*P.sq, sxz=(1+(1-h)*.5)/Math.sqrt(Math.max(.4,P.sq));
     tofu.position.set(P.x,P.y,0); tofu.scale.set(sxz+jig,sy,sxz); tofu.rotation.y=P.tilt; tofu.rotation.z=-P.vx*.012;
-    tofu.visible=state==='title'||P.inv<=0||Math.floor(P.inv*14)%2===0;
+    tofu.visible=state==='intro'?introT>=9:(state==='title'||P.inv<=0||Math.floor(P.inv*14)%2===0);
     P.blink-=dt; const bl=P.blink<.12?.15:1; if(P.blink<0)P.blink=2+Math.random()*3;
     const sad=P.mental<=50; eyeL.scale.y=eyeR.scale.y=bl*(1/Math.max(.4,sy))*.9*(sad?.8:1);
     mouth.rotation.z=sad?0:Math.PI; mouth.position.y=sad?.4:.47;
     chL.visible=chR.visible=P.mental>75; sweat.visible=P.mental<=35; sweat.position.y=.85+Math.sin(gt*6)*.04;
   }
   // camera
+  if(state==='intro'){introCamera();shake=Math.max(0,shake-dt);if(shake>0)camera.position.y+=(Math.random()-.5)*shake*shake*1.2}else{
   const tx=P.x+2.5, ty=Math.max(2,P.y*.6+2);
   camX+=(tx-camX)*Math.min(1,dt*4); camY+=(ty-camY)*Math.min(1,dt*3);
   shake=Math.max(0,shake-dt); const sk=shake*shake*1.2;
   camera.position.set(camX+(Math.random()-.5)*sk,camY+2.4+(Math.random()-.5)*sk,camDist);
   camera.lookAt(camX,camY,0);
   sun.position.set(camX+6,15,10); sun.target.position.set(camX,0,0); amb.position.set(camX,4,4);
+  }
   if(toastT>0){toastT-=dt;if(toastT<=0)$('#toast').classList.remove('on')}
   if(state==='play')hud();
   renderer.render(scene,camera);
