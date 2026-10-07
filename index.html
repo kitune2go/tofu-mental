@@ -432,7 +432,7 @@ $('#retryBtn').addEventListener('click',start);
 
 function hurt(n,label){
   if(P.inv>0||state!=='play')return false;
-  P.mental=Math.max(0,P.mental-n); P.inv=1.3; shake=.45; flash(); sfx('hit');
+  P.mental=Math.max(0,P.mental-n); P.inv=1.0; shake=.55; flash(); sfx('hit');
   toast(label+'　−'+n,'bad'); burst(P.x,P.y+H()/2,8,4);
   if(P.mental<=0){die('崩壊','メンタルが崩れました','受け止められる量には限りがある。豆腐のせいではない。');}
   return true;
@@ -508,7 +508,7 @@ function update(dt){
     const {y,mode}=pressY(p);
     if(Math.abs(P.x-p.x)<1+hw && y<P.y+h-.02 && y+.7>P.y){
       if(mode==='slam'&&P.inv<=0){
-        P.sq=.3; hurt(25,'プレスされた');
+        P.sq=.3; hurt(35,'プレスされた');
         P.x=P.x<p.x?p.x-1-hw-.05:p.x+1+hw+.05; P.vy=5; P.vx=(P.x<p.x?-1:1)*4;
       }else{ P.x=px<p.x?p.x-1-hw:p.x+1+hw; P.vx=0; }
     }
@@ -537,7 +537,7 @@ function update(dt){
     const p=projs[i];p.s.position.x+=p.vx*dt;p.wob+=dt*5;p.s.position.y+=Math.sin(p.wob)*dt*.4;
     const sx=p.s.position.x,sy=p.s.position.y;
     if(Math.abs(sx-P.x)<p.hw+hw*.8&&sy+p.hh>P.y&&sy-p.hh<P.y+h){
-      if(hurt(12,'「'+p.t+'」')){P.sq=.6;scene.remove(p.s);projs.splice(i,1);continue}
+      if(hurt(20,'「'+p.t+'」')){P.sq=.6;scene.remove(p.s);projs.splice(i,1);continue}
     }
     if(sx<P.x-22){scene.remove(p.s);projs.splice(i,1)}
   }
