@@ -1,0 +1,446 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="宇宙まで逃げても通知は光速で届く。豆腐が月を目指す宇宙シューティング。">
+<meta property="og:type" content="website">
+<meta property="og:title" content="すり潰されて豆腐メンタル EX2 宇宙まで逃げた">
+<meta property="og:description" content="宇宙まで逃げても、通知は光速で届く。">
+<meta property="og:url" content="https://tofu-mental-seven.vercel.app/space.html">
+<meta property="og:image" content="https://tofu-mental-seven.vercel.app/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://tofu-mental-seven.vercel.app/og.png">
+<title>すり潰されて豆腐メンタル EX2</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=M+PLUS+1+Code:wght@400;700&display=swap">
+<style>
+/* Layout: full-screen chase view, HUD top, distance-to-Moon meter. Deep-space palette: ink black, moon cream, signal magenta. */
+html{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+:root{
+  --space:#05060d; --panel:rgba(8,10,22,.8); --line:#2c3158;
+  --tofu:#f6f3ea; --moon:#efe6c8; --signal:#ff4fa3; --hazard:#f0b92b; --alert:#e5483c; --negi:#5fae4e;
+  --ink:#eef0f7; --muted:#959cc0;
+  --f-display:"Dela Gothic One","Hiragino Sans","Yu Gothic","Meiryo",sans-serif;
+  --f-ui:"M PLUS 1 Code","Hiragino Sans","Yu Gothic","Meiryo",monospace;
+  color-scheme:dark;
+}
+html,body{height:100%;margin:0;overflow:hidden;background:var(--space);color:var(--ink);font-family:var(--f-ui);-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+#c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+.hud{position:fixed;left:0;right:0;top:0;padding:calc(env(safe-area-inset-top,0px) + 10px) 16px 0;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;pointer-events:none;z-index:5}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:8px 12px}
+.mental{min-width:0;flex:0 1 240px}
+.lbl{font-size:11px;letter-spacing:.12em;color:var(--muted);display:flex;justify-content:space-between;gap:8px}
+.tier{color:var(--tofu);font-weight:700}
+.bar{margin-top:6px;height:12px;background:#03040a;border-radius:3px;overflow:hidden;border:1px solid var(--line)}
+.fill{height:100%;width:100%;background:var(--tofu);transition:width .2s ease,background-color .2s}
+.boss{margin-top:8px}
+.boss .fill{background:var(--signal)}
+.dist{text-align:right}
+.km{font-family:var(--f-display);font-size:24px;line-height:1;font-variant-numeric:tabular-nums;color:var(--moon)}
+.sub{font-size:11px;color:var(--muted);margin-top:4px;letter-spacing:.06em;font-variant-numeric:tabular-nums}
+.route{margin-top:6px;height:6px;width:150px;max-width:40vw;margin-left:auto;background:#03040a;border:1px solid var(--line);border-radius:3px;overflow:hidden}
+.route i{display:block;height:100%;width:0;background:linear-gradient(90deg,#4f8cff,var(--moon))}
+.mute{pointer-events:auto;margin-top:6px;font:inherit;font-size:11px;color:var(--muted);background:transparent;border:1px solid var(--line);border-radius:4px;padding:3px 8px;cursor:pointer}
+.combo{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 100px);transform:translateX(-50%);font-family:var(--f-display);font-size:clamp(24px,7vw,42px);color:var(--signal);text-shadow:0 3px 0 #2a0718;opacity:0;transition:opacity .2s;pointer-events:none;z-index:6;white-space:nowrap}
+.combo.on{opacity:1}
+.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 28px);transform:translateX(-50%);font-weight:700;font-size:16px;color:var(--tofu);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:6px 14px;white-space:nowrap;opacity:0;transition:opacity .2s;pointer-events:none;z-index:6}
+.toast.on{opacity:1}
+.toast.bad{color:#ffb3ab;border-color:var(--alert)}
+.toast.good{color:#cfeec5;border-color:var(--negi)}
+.flash{position:fixed;inset:0;pointer-events:none;box-shadow:inset 0 0 0 0 rgba(229,72,60,0);transition:box-shadow .35s;z-index:4}
+.flash.on{box-shadow:inset 0 0 90px 30px rgba(229,72,60,.55);transition:none}
+.overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(5,6,13,.82);z-index:10}
+.card{max-width:520px;width:100%;text-align:center}
+.kicker{font-size:13px;letter-spacing:.3em;color:var(--muted)}
+h1{font-family:var(--f-display);font-weight:400;margin:10px 0 0;line-height:1.05;text-wrap:balance}
+h1 .s{display:block;font-size:clamp(18px,4.6vw,24px)}
+h1 .b{display:block;font-size:clamp(38px,11vw,70px);color:var(--moon)}
+h1 .st{display:block;font-size:clamp(18px,5vw,26px);color:var(--signal);margin-top:6px}
+.stripe{height:12px;margin:14px auto 18px;max-width:340px;background:repeating-linear-gradient(-45deg,var(--hazard) 0 14px,#16110a 14px 28px);border-radius:2px}
+.lead{font-size:15px;line-height:1.7;margin:0 auto;max-width:34em}
+.keys{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;text-align:left;font-size:13px;color:var(--muted);max-width:360px;margin:16px auto 0}
+.keys b{color:var(--ink)}
+.btns{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:22px}
+.btn{font-family:var(--f-display);font-size:20px;color:#14060d;background:var(--signal);border:0;border-radius:6px;padding:12px 34px;cursor:pointer;box-shadow:0 4px 0 #8a1f55}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 #8a1f55}
+.ghost{display:inline-block;font-family:var(--f-display);font-size:16px;color:var(--ink);background:transparent;border:2px solid var(--ink);border-radius:6px;padding:10px 20px;text-decoration:none;cursor:pointer}
+.btn:focus-visible,.ghost:focus-visible,.mute:focus-visible{outline:2px solid var(--hazard);outline-offset:2px}
+.result{font-size:15px;line-height:1.9;margin-top:6px;font-variant-numeric:tabular-nums}
+.result b{color:var(--hazard)}
+.note{font-size:12px;color:var(--muted);margin-top:12px}
+@media (prefers-reduced-motion:reduce){.fill,.toast,.combo{transition:none}}
+</style>
+</head>
+<body>
+<canvas id="c" aria-label="ゲーム画面"></canvas>
+<div class="flash" id="flash"></div>
+
+<div class="hud">
+  <div class="box mental">
+    <div class="lbl"><span>メンタル</span><span><span class="tier" id="tier">木綿</span> <span id="mval">100</span></span></div>
+    <div class="bar"><div class="fill" id="fill"></div></div>
+    <div class="boss" id="bossBox" hidden>
+      <div class="lbl"><span>本社衛星</span><span id="bossVal"></span></div>
+      <div class="bar"><div class="fill" id="bossFill"></div></div>
+    </div>
+  </div>
+  <div class="box dist">
+    <div class="km" id="km">384,400 km</div>
+    <div class="sub" id="sub">月まで　スコア 0</div>
+    <div class="route"><i id="route"></i></div>
+    <button class="mute" id="mute" type="button">音 ON</button>
+  </div>
+</div>
+<div class="combo" id="combo"></div>
+<div class="toast" id="toast"></div>
+
+<div class="overlay" id="ovTitle">
+  <div class="card">
+    <div class="kicker">EX2　宇宙モード</div>
+    <h1><span class="s">すり潰されて豆腐メンタル</span><span class="b">宇宙まで逃げた</span><span class="st">通知は光速で届く。</span></h1>
+    <div class="stripe"></div>
+    <p class="lead">地球の重力（プレッシャー）を振り切って、月の裏側で有給を過ごす。<br>ただし本社の衛星は、どこまでも追ってくる。</p>
+    <div class="keys">
+      <b>ドラッグ / 矢印キー</b><span>豆腐号を動かす（弾は自動で出る）</span>
+      <b>タスク隕石</b><span>ぶつかると −20。撃てば砕ける</span>
+      <b>通知衛星</b><span>通知を飛ばしてくる。当たると −12</span>
+      <b>有給リング</b><span>くぐるとメンタル ＋12</span>
+    </div>
+    <div class="btns">
+      <button class="btn" id="startBtn" type="button">発射</button>
+      <a class="ghost" href="./">1面へ</a>
+    </div>
+    <div class="note" id="best"></div>
+  </div>
+</div>
+
+<div class="overlay" id="ovEnd" hidden>
+  <div class="card">
+    <div class="kicker" id="endKicker"></div>
+    <h1><span class="b" id="endTitle" style="font-size:clamp(30px,8.5vw,52px)"></span></h1>
+    <div class="stripe"></div>
+    <p class="lead" id="endLead"></p>
+    <div class="result" id="endResult"></div>
+    <div class="btns">
+      <button class="btn" id="retryBtn" type="button">もう一度飛ぶ</button>
+      <a class="ghost" id="shareBtn" href="#" target="_blank" rel="noopener">Xでシェア</a>
+      <a class="ghost" href="./">1面へ</a>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(()=>{
+const $=s=>document.querySelector(s);
+const SITE='https://tofu-mental-seven.vercel.app/space.html';
+const TRIP=384400, BOSS_AT=60, SCROLL=34, BX=6, BY=3.4;
+
+/* ---------- renderer ---------- */
+const canvas=$('#c');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+renderer.setPixelRatio(Math.min(2,window.devicePixelRatio||1));
+renderer.outputEncoding=THREE.sRGBEncoding;
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x05060d);
+scene.fog=new THREE.Fog(0x05060d,70,150);
+const camera=new THREE.PerspectiveCamera(60,1,.1,400);
+scene.add(new THREE.HemisphereLight(0xbfc8ff,0x201830,.7));
+const sunL=new THREE.DirectionalLight(0xfff1dc,1.1); sunL.position.set(8,6,10); scene.add(sunL);
+function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.fov=w<h?78:60;camera.updateProjectionMatrix()}
+addEventListener('resize',resize); resize();
+function ctex(w,h,draw){const c=document.createElement('canvas');c.width=w;c.height=h;draw(c.getContext('2d'),w,h);const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;return t}
+
+/* ---------- backdrop: stars, Earth behind, Moon ahead ---------- */
+const STAR_N=1400, starPos=new Float32Array(STAR_N*3);
+for(let i=0;i<STAR_N;i++){starPos[i*3]=(Math.random()-.5)*160;starPos[i*3+1]=(Math.random()-.5)*100;starPos[i*3+2]=-Math.random()*220+20}
+const starGeo=new THREE.BufferGeometry(); starGeo.setAttribute('position',new THREE.BufferAttribute(starPos,3));
+const stars=new THREE.Points(starGeo,new THREE.PointsMaterial({color:0xdfe4ff,size:.35,sizeAttenuation:true,fog:false})); scene.add(stars);
+const moonTex=ctex(512,256,(g,w,h)=>{g.fillStyle='#d9d2bb';g.fillRect(0,0,w,h);for(let i=0;i<140;i++){const r=4+Math.random()*26,x=Math.random()*w,y=Math.random()*h;g.fillStyle=`rgba(${120+Math.random()*40|0},${115+Math.random()*30|0},100,${.25+Math.random()*.3})`;g.beginPath();g.arc(x,y,r,0,7);g.fill()}});
+const moon=new THREE.Mesh(new THREE.SphereGeometry(30,48,32),new THREE.MeshStandardMaterial({map:moonTex,roughness:1,fog:false}));
+moon.position.set(18,10,-260); scene.add(moon);
+const earthTex=ctex(512,256,(g,w,h)=>{g.fillStyle='#1f4d8f';g.fillRect(0,0,w,h);g.fillStyle='#3d8a4a';for(let i=0;i<22;i++){g.beginPath();g.ellipse(Math.random()*w,Math.random()*h,20+Math.random()*60,10+Math.random()*30,Math.random()*3,0,7);g.fill()}g.fillStyle='rgba(255,255,255,.55)';for(let i=0;i<30;i++){g.fillRect(Math.random()*w,Math.random()*h,40+Math.random()*80,4)}});
+const earth=new THREE.Mesh(new THREE.SphereGeometry(40,48,32),new THREE.MeshStandardMaterial({map:earthTex,roughness:.8,fog:false}));
+earth.position.set(-30,-45,60); scene.add(earth);
+
+/* ---------- player ship: tofu with wings ---------- */
+function roundedBox(w,h,d,r,s){
+  const g=new THREE.BoxGeometry(w,h,d,s,s,s),p=g.attributes.position,v=new THREE.Vector3(),c=new THREE.Vector3();
+  const ix=w/2-r,iy=h/2-r,iz=d/2-r;
+  for(let i=0;i<p.count;i++){v.fromBufferAttribute(p,i);c.set(Math.max(-ix,Math.min(ix,v.x)),Math.max(-iy,Math.min(iy,v.y)),Math.max(-iz,Math.min(iz,v.z)));const n=v.clone().sub(c);if(n.lengthSq()>1e-9){n.normalize().multiplyScalar(r);v.copy(c).add(n)}p.setXYZ(i,v.x,v.y,v.z)}
+  g.computeVertexNormals(); return g;
+}
+const tofuMat=new THREE.MeshStandardMaterial({color:0xf6f3ea,roughness:.5,emissive:0x2a2822});
+const black=new THREE.MeshBasicMaterial({color:0x1a1a1a});
+const ship=new THREE.Group(); scene.add(ship);
+const hull=new THREE.Mesh(roundedBox(1,.8,1.2,.12,5),tofuMat); ship.add(hull);
+for(const s of[-1,1]){
+  const wing=new THREE.Mesh(new THREE.BoxGeometry(1.1,.08,.6),new THREE.MeshStandardMaterial({color:0xb9c2d6,metalness:.5,roughness:.4})); wing.position.set(.95*s,-.05,.15); wing.rotation.z=-.15*s; ship.add(wing);
+  const tip=new THREE.Mesh(new THREE.BoxGeometry(.12,.3,.5),new THREE.MeshStandardMaterial({color:0xff4fa3,emissive:0x5a0f33})); tip.position.set(1.48*s,.04,.15); ship.add(tip);
+  const eye=new THREE.Mesh(new THREE.SphereGeometry(.07,10,8),black); eye.position.set(.2*s,.15,-.61); eye.scale.z=.4; ship.add(eye);
+}
+const mouth=new THREE.Mesh(new THREE.TorusGeometry(.08,.018,6,12,Math.PI),black); mouth.position.set(0,-.06,-.61); mouth.rotation.set(0,Math.PI,Math.PI); ship.add(mouth);
+const flame=new THREE.Mesh(new THREE.ConeGeometry(.28,1,12),new THREE.MeshBasicMaterial({color:0x7fd0ff,transparent:true,opacity:.8})); flame.rotation.x=-Math.PI/2; flame.position.z=1.1; ship.add(flame);
+// camera looks along -z; the face sits on the -z side, so the player sees the tofu's back and thruster — fine for a chase view
+
+/* ---------- words ---------- */
+const WORDS=['今どこ？','電波届いてる？','至急です','念のため共有','既読つかないけど','宇宙でもリモートで','月曜までに','定例どうする？'];
+const BOSS_WORDS=['帰還命令','全社会議','緊急招集','進捗は？','席に戻って'];
+const COMEBACK=['圏外です','有給です','重力ありません','月曜に','無重力です'];
+const texCache={};
+function bubbleTex(t,col){
+  const key=t+col; if(texCache[key])return texCache[key];
+  const c=document.createElement('canvas'),g=c.getContext('2d');const f='bold 46px "M PLUS 1 Code","Hiragino Sans",sans-serif';g.font=f;
+  const w=Math.ceil(g.measureText(t).width)+56,h=96;c.width=w;c.height=h;g.font=f;
+  g.fillStyle=col;const r=18;g.beginPath();g.moveTo(r,6);g.lineTo(w-r,6);g.quadraticCurveTo(w-4,6,w-4,r+6);g.lineTo(w-4,h-r-14);g.quadraticCurveTo(w-4,h-14,w-r,h-14);g.lineTo(44,h-14);g.lineTo(22,h-2);g.lineTo(28,h-14);g.lineTo(r,h-14);g.quadraticCurveTo(4,h-14,4,h-r-14);g.lineTo(4,r+6);g.quadraticCurveTo(4,6,r,6);g.fill();
+  g.fillStyle=col==='#f6f3ea'?'#1a1a22':'#fff6f2';g.textBaseline='middle';g.fillText(t,28,(h-8)/2+2);
+  const tx=new THREE.CanvasTexture(c);tx.encoding=THREE.sRGBEncoding;return texCache[key]={tx,a:w/h};
+}
+function sprite(t,hgt,col){const {tx,a}=bubbleTex(t,col||'#ff4fa3');const s=new THREE.Sprite(new THREE.SpriteMaterial({map:tx,transparent:true}));s.scale.set(hgt*a,hgt,1);return s}
+
+/* ---------- entities ---------- */
+const bullets=[],foes=[],pops=[],debris=[];
+const bulletGeo=new THREE.BoxGeometry(.18,.18,.5), bulletMat=new THREE.MeshBasicMaterial({color:0xfffbe8});
+const rockMat=new THREE.MeshStandardMaterial({color:0x8a7f74,roughness:1,flatShading:true});
+const tagTex=ctex(256,64,(g,w,h)=>{g.fillStyle='#e5483c';g.fillRect(0,0,w,h);g.fillStyle='#fff';g.font='bold 34px "M PLUS 1 Code",sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText('タスク',w/2,h/2+2)});
+let boss=null;
+function rockGeo(r){const g=new THREE.IcosahedronGeometry(r,1),p=g.attributes.position,v=new THREE.Vector3();for(let i=0;i<p.count;i++){v.fromBufferAttribute(p,i);v.multiplyScalar(.8+Math.random()*.35);p.setXYZ(i,v.x,v.y,v.z)}g.computeVertexNormals();return g}
+function spawnRock(){
+  const r=.8+Math.random()*1.3, m=new THREE.Mesh(rockGeo(r),rockMat);
+  const tag=new THREE.Sprite(new THREE.SpriteMaterial({map:tagTex,transparent:true})); tag.scale.set(r*1.4,r*.35,1); tag.position.y=r*1.05; m.add(tag);
+  m.position.set((Math.random()-.5)*BX*2.2,(Math.random()-.5)*BY*2.2,-140);
+  scene.add(m);
+  foes.push({type:'rock',obj:m,r:r*.9,hp:Math.ceil(r*2),spin:new THREE.Vector3(Math.random(),Math.random(),Math.random()).multiplyScalar(2),drift:new THREE.Vector3((Math.random()-.5)*2,(Math.random()-.5)*1.4,0),pts:120,dmg:20,label:'タスク隕石'});
+}
+function spawnSat(){
+  const g=new THREE.Group();
+  g.add(new THREE.Mesh(new THREE.BoxGeometry(.9,.9,.9),new THREE.MeshStandardMaterial({color:0xd4af55,metalness:.6,roughness:.3})));
+  for(const s of[-1,1]){const p=new THREE.Mesh(new THREE.BoxGeometry(1.6,.05,.8),new THREE.MeshStandardMaterial({color:0x2a4a9a,metalness:.4,roughness:.3,emissive:0x0a1430}));p.position.x=1.3*s;g.add(p)}
+  const dish=new THREE.Mesh(new THREE.ConeGeometry(.4,.3,16,1,true),new THREE.MeshStandardMaterial({color:0xeeeeee,side:THREE.DoubleSide}));dish.rotation.x=Math.PI/2;dish.position.z=.6;g.add(dish);
+  const led=new THREE.Mesh(new THREE.SphereGeometry(.12,8,6),new THREE.MeshBasicMaterial({color:0xff4fa3}));led.position.y=.55;g.add(led);
+  g.position.set((Math.random()-.5)*BX*1.6,(Math.random()-.5)*BY*1.6,-140); scene.add(g);
+  foes.push({type:'sat',obj:g,r:1.3,hp:3,ph:Math.random()*6,hold:-38-Math.random()*12,fire:1.2,pts:300,led});
+}
+function spawnRing(){
+  const g=new THREE.Group();
+  g.add(new THREE.Mesh(new THREE.TorusGeometry(1.7,.16,10,40),new THREE.MeshBasicMaterial({color:0x5fae4e})));
+  const lab=sprite('有給',.6,'#5fae4e'); lab.position.y=2.2; g.add(lab);
+  g.position.set((Math.random()-.5)*BX*1.4,(Math.random()-.5)*BY*1.4,-140); scene.add(g);
+  foes.push({type:'ring',obj:g,r:0,hp:999});
+}
+function spawnShot(from,t,col,speed){
+  const s=sprite(t,.65,col); s.position.copy(from); scene.add(s);
+  const target=ship.position.clone().add(new THREE.Vector3((Math.random()-.5)*.8,(Math.random()-.5)*.6,0));
+  const v=target.sub(from).normalize().multiplyScalar(speed);
+  foes.push({type:'shot',obj:s,r:.7,hp:1,v,pts:40,dmg:12,label:t});
+}
+function spawnBoss(){
+  const g=new THREE.Group();
+  const core=new THREE.Mesh(new THREE.CylinderGeometry(3,3,2,8),new THREE.MeshStandardMaterial({color:0x9aa2b8,metalness:.7,roughness:.3})); core.rotation.x=Math.PI/2; g.add(core);
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(5,.35,8,48),new THREE.MeshStandardMaterial({color:0xff4fa3,emissive:0x5a0f33})); g.add(ring);
+  for(const s of[-1,1]){const p=new THREE.Mesh(new THREE.BoxGeometry(5,.12,2.4),new THREE.MeshStandardMaterial({color:0x2a4a9a,metalness:.4,emissive:0x0a1430}));p.position.x=7.5*s;g.add(p)}
+  const sign=ctex(512,128,(c,w,h)=>{c.fillStyle='#14060d';c.fillRect(0,0,w,h);c.fillStyle='#ff4fa3';c.font='bold 72px "Dela Gothic One","Hiragino Sans",sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillText('本社',w/2,h/2+4)});
+  const face=new THREE.Mesh(new THREE.PlaneGeometry(4,1),new THREE.MeshBasicMaterial({map:sign})); face.position.z=1.02; g.add(face);
+  g.position.set(0,1,-150); scene.add(g);
+  boss={type:'boss',obj:g,r:4.2,hp:40,max:40,t:0,fire:2,pts:5000,ring};
+  foes.push(boss); $('#bossBox').hidden=false; toast('本社衛星が追ってきた！','bad'); sfx('boss');
+}
+
+/* ---------- audio ---------- */
+let ac=null,soundOn=true;
+function sfx(k){
+  if(!ac||!soundOn)return;
+  try{
+    const t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);
+    const env=(v,d)=>{g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.start(t);o.stop(t+d+.02)};
+    if(k==='shot'){o.type='square';o.frequency.setValueAtTime(900,t);o.frequency.exponentialRampToValueAtTime(400,t+.05);env(.015,.06)}
+    else if(k==='pop'){o.type='triangle';o.frequency.setValueAtTime(520,t);o.frequency.exponentialRampToValueAtTime(1040,t+.08);env(.06,.12)}
+    else if(k==='hit'){o.type='sawtooth';o.frequency.setValueAtTime(170,t);o.frequency.exponentialRampToValueAtTime(45,t+.25);env(.12,.28)}
+    else if(k==='boom'){o.type='sawtooth';o.frequency.setValueAtTime(240,t);o.frequency.exponentialRampToValueAtTime(30,t+.45);env(.12,.5)}
+    else if(k==='heal'){o.type='triangle';[660,880,1100].forEach((f,i)=>o.frequency.setValueAtTime(f,t+i*.07));env(.09,.3)}
+    else if(k==='boss'){o.type='square';o.frequency.setValueAtTime(110,t);o.frequency.setValueAtTime(82,t+.25);env(.1,.6)}
+    else if(k==='die'){o.type='sawtooth';o.frequency.setValueAtTime(320,t);o.frequency.exponentialRampToValueAtTime(40,t+.9);env(.1,.95)}
+    else if(k==='clear'){o.type='triangle';[523,659,784,1046,1318].forEach((f,i)=>o.frequency.setValueAtTime(f,t+i*.12));env(.1,.8)}
+  }catch(e){}
+}
+let bgm=null,bgmFallback=false;
+function makeBgm(src){const a=new Audio();a.loop=true;a.preload='auto';a.volume=.5;a.src=src;a.muted=!soundOn;
+  a.addEventListener('error',()=>{if(bgmFallback)return;bgmFallback=true;fetch('bgm.mp3').then(r=>r.blob()).then(b=>{bgm=makeBgm(URL.createObjectURL(b));if(state==='play')bgm.play().catch(()=>{})}).catch(()=>{})});
+  return a;}
+function bgmPlay(){if(!bgm)bgm=makeBgm('bgm.mp3');try{bgm.currentTime=0}catch(e){}bgm.volume=.5;bgm.muted=!soundOn;bgm.play().catch(()=>{})}
+function bgmDuck(v){if(bgm)bgm.volume=v}
+$('#mute').addEventListener('click',e=>{soundOn=!soundOn;e.currentTarget.textContent=soundOn?'音 ON':'音 OFF';if(bgm)bgm.muted=!soundOn});
+
+/* ---------- UI ---------- */
+let toastT=0,comboT=0;
+function toast(t,cls){const el=$('#toast');el.textContent=t;el.className='toast on '+(cls||'');toastT=1.4}
+function flash(){const f=$('#flash');f.classList.add('on');requestAnimationFrame(()=>requestAnimationFrame(()=>f.classList.remove('on')))}
+const tierOf=m=>m>75?'木綿':m>50?'絹ごし':m>25?'おぼろ':m>0?'崩れかけ':'おから';
+function getBest(){try{return parseInt(localStorage.getItem('tofuBestSpace'))||0}catch(e){return 0}}
+function setBest(v){try{localStorage.setItem('tofuBestSpace',String(v))}catch(e){}}
+function showBest(){const b=getBest();$('#best').textContent=b?`自己ベスト ${b.toLocaleString()} 点`:'弾は自動で出ます。動かすことに集中'}
+showBest();
+
+/* ---------- input ---------- */
+const goal=new THREE.Vector2(0,0); const keys={};
+let drag=null;
+canvas.addEventListener('pointerdown',e=>{if(state!=='play')return;e.preventDefault();try{canvas.setPointerCapture(e.pointerId)}catch(_){}drag={x:e.clientX,y:e.clientY,gx:goal.x,gy:goal.y}});
+canvas.addEventListener('pointermove',e=>{
+  if(drag){const k=Math.max(innerWidth,innerHeight);goal.x=Math.max(-BX,Math.min(BX,drag.gx+(e.clientX-drag.x)/k*22));goal.y=Math.max(-BY,Math.min(BY,drag.gy-(e.clientY-drag.y)/k*22))}
+  else if(e.pointerType==='mouse'&&state==='play'){goal.x=(e.clientX/innerWidth*2-1)*BX;goal.y=-(e.clientY/innerHeight*2-1)*BY}
+});
+const endDrag=()=>{drag=null};
+canvas.addEventListener('pointerup',endDrag);canvas.addEventListener('pointercancel',endDrag);
+addEventListener('keydown',e=>{keys[e.code]=true;if((e.code==='Space'||e.code==='Enter')&&state!=='play'&&state!=='dead'&&!e.repeat){e.preventDefault();start()}});
+addEventListener('keyup',e=>{keys[e.code]=false});
+addEventListener('blur',()=>{for(const k in keys)keys[k]=false;drag=null});
+
+/* ---------- state ---------- */
+let state='title',elapsed=0,mental=100,score=0,combo=0,shots=0,hits=0,inv=0,shake=0,fireCd=0,spawnR=1,spawnS=5,spawnG=8,km=TRIP,rings=0;
+function clearAll(){for(const f of foes)scene.remove(f.obj);foes.length=0;for(const b of bullets)scene.remove(b.m);bullets.length=0;for(const p of pops)scene.remove(p.s);pops.length=0;boss=null}
+function start(){
+  if(!ac){try{ac=new (window.AudioContext||window.webkitAudioContext)()}catch(e){}}
+  if(ac&&ac.state==='suspended')ac.resume();
+  clearAll(); elapsed=0; mental=100; score=0; combo=0; shots=0; hits=0; inv=0; spawnR=1; spawnS=5; spawnG=8; km=TRIP; rings=0;
+  goal.set(0,0); ship.position.set(0,0,0); ship.visible=true;
+  $('#bossBox').hidden=true; $('#ovTitle').hidden=true; $('#ovEnd').hidden=true;
+  bgmPlay(); state='play'; toast('発射！ 月の裏で有給を','good'); hud(true);
+}
+$('#startBtn').addEventListener('click',start);
+$('#retryBtn').addEventListener('click',start);
+
+function hurt(n,label){
+  if(inv>0||state!=='play')return;
+  mental=Math.max(0,mental-n); inv=1; shake=.6; flash(); sfx('hit'); combo=0;
+  toast('「'+label+'」　−'+n,'bad');
+  if(mental<=0)end(false);
+}
+function burst(pos,n,col){for(let i=0;i<n;i++){const m=new THREE.Mesh(new THREE.BoxGeometry(.2,.2,.2),new THREE.MeshBasicMaterial({color:col}));m.position.copy(pos);scene.add(m);debris.push({m,v:new THREE.Vector3((Math.random()-.5)*14,(Math.random()-.5)*14,(Math.random()-.5)*14),life:.8})}}
+function addScore(base,at){
+  combo++; comboT=2; hits++;
+  score+=Math.round(base*(1+Math.min(combo,30)*.1));
+  if(combo>=3){const c=$('#combo');c.textContent=combo+' COMBO!!';c.classList.add('on')}
+  if(Math.random()<.5){const s=sprite(COMEBACK[(Math.random()*COMEBACK.length)|0],.7,'#f6f3ea');s.position.copy(at);scene.add(s);pops.push({s,life:.8})}
+}
+function end(won){
+  state=won?'clear':'dead'; bgmDuck(won?.35:.18); sfx(won?'clear':'die');
+  if(!won){ship.visible=false;burst(ship.position,30,0xf6f3ea)}
+  const acc=shots?Math.round(hits/shots*100):0;
+  const best=getBest(),nb=score>best; if(nb)setBest(score);
+  const title=won?(mental>=70?'月の裏で完全有給':mental>=35?'圏外で一息':'ぎりぎり月面着陸'):'宇宙で崩れた';
+  setTimeout(()=>{
+    $('#endKicker').textContent=won?'本社衛星 撃破／月面着陸':'メンタル崩壊';
+    $('#endTitle').textContent=title;
+    $('#endLead').textContent=won?'ここは圏外。通知はもう届かない。少なくとも月曜までは。':`月まであと ${Math.round(km).toLocaleString()} km。宇宙でも、仕事は追いかけてくる。`;
+    $('#endResult').innerHTML=`スコア <b>${score.toLocaleString()}</b>${nb?'（自己ベスト）':''}<br>命中率 <b>${acc}%</b>　有給リング <b>${rings}</b>　残りメンタル <b>${Math.ceil(mental)}</b>`;
+    const txt=won?`豆腐号、月面着陸！\n称号【${title}】\nスコア${score.toLocaleString()}／命中率${acc}%\n#すり潰されて豆腐メンタル`:`宇宙まで逃げたけど崩れた……\n月まであと${Math.round(km).toLocaleString()}km／スコア${score.toLocaleString()}\n#すり潰されて豆腐メンタル`;
+    $('#shareBtn').href='https://x.com/intent/post?text='+encodeURIComponent(txt)+'&url='+encodeURIComponent(SITE);
+    $('#ovEnd').hidden=false; showBest();
+  },won?1000:800);
+}
+let lastHud='';
+function hud(force){
+  const m=Math.ceil(mental);
+  const key=m+'|'+score+'|'+Math.round(km/100)+'|'+(boss?boss.hp:0); if(!force&&key===lastHud)return; lastHud=key;
+  $('#mval').textContent=m; $('#tier').textContent=tierOf(m);
+  const f=$('#fill'); f.style.width=m+'%'; f.style.backgroundColor=m>50?'var(--tofu)':m>25?'var(--hazard)':'var(--alert)';
+  $('#km').textContent=Math.max(0,Math.round(km)).toLocaleString()+' km';
+  $('#sub').textContent=(boss?'本社衛星と交戦中':'月まで')+'　スコア '+score.toLocaleString();
+  $('#route').style.width=((1-km/TRIP)*100)+'%';
+  if(boss){$('#bossFill').style.width=(boss.hp/boss.max*100)+'%';$('#bossVal').textContent=boss.hp}
+}
+
+/* ---------- update ---------- */
+function update(dt){
+  elapsed+=dt; inv=Math.max(0,inv-dt);
+  km=Math.max(boss?2000:0,TRIP*(1-Math.min(elapsed,BOSS_AT)/BOSS_AT*.995));
+  // steer
+  const kx=(keys.ArrowRight||keys.KeyD?1:0)-(keys.ArrowLeft||keys.KeyA?1:0), ky=(keys.ArrowUp||keys.KeyW?1:0)-(keys.ArrowDown||keys.KeyS?1:0);
+  if(kx||ky){goal.x=Math.max(-BX,Math.min(BX,goal.x+kx*dt*9));goal.y=Math.max(-BY,Math.min(BY,goal.y+ky*dt*9))}
+  const px=ship.position.x,py=ship.position.y;
+  ship.position.x+=(goal.x-px)*Math.min(1,dt*8); ship.position.y+=(goal.y-py)*Math.min(1,dt*8);
+  ship.rotation.z=-(ship.position.x-px)/dt*.03; ship.rotation.x=(ship.position.y-py)/dt*.03;
+  // auto fire (twin)
+  fireCd-=dt; if(fireCd<=0){fireCd=.13;shots++;sfx('shot');for(const s of[-1,1]){const m=new THREE.Mesh(bulletGeo,bulletMat);m.position.set(ship.position.x+.55*s,ship.position.y,-.6);scene.add(m);bullets.push({m,life:1.4})}}
+  // spawns
+  if(!boss){
+    spawnR-=dt; if(spawnR<=0){spawnRock();spawnR=Math.max(.45,1.1-elapsed*.01)+Math.random()*.4}
+    spawnS-=dt; if(spawnS<=0){spawnSat();spawnS=Math.max(3,6-elapsed*.04)+Math.random()*2}
+    if(elapsed>=BOSS_AT)spawnBoss();
+  }else{spawnR-=dt;if(spawnR<=0){spawnRock();spawnR=2.2+Math.random()}}
+  spawnG-=dt; if(spawnG<=0){spawnRing();spawnG=8+Math.random()*4}
+  // bullets (substeps)
+  for(let i=bullets.length-1;i>=0;i--){
+    const b=bullets[i]; b.life-=dt; let hit=null;
+    for(let k=0;k<4&&!hit;k++){
+      b.m.position.z-=95*dt/4;
+      for(const f of foes){if(f.type==='ring')continue;const p=f.obj.position;const dx=b.m.position.x-p.x,dy=b.m.position.y-p.y,dz=b.m.position.z-p.z;
+        if(f.type==='shot'?(Math.abs(dx)<f.obj.scale.x/2+.2&&Math.abs(dy)<.5&&Math.abs(dz)<1.5):(dx*dx+dy*dy+dz*dz<f.r*f.r)){hit=f;break}}
+    }
+    if(hit){
+      scene.remove(b.m);bullets.splice(i,1);hit.hp--;
+      if(hit.hp<=0){
+        sfx(hit.type==='shot'?'pop':'boom'); addScore(hit.pts,hit.obj.position.clone());
+        burst(hit.obj.position,hit.type==='boss'?40:hit.type==='rock'?10:6,hit.type==='rock'?0x8a7f74:0xff4fa3);
+        kill(hit);
+        if(hit.type==='boss'){boss=null;end(true);return}
+      }else{sfx('pop');hits++}
+      continue;
+    }
+    if(b.life<=0){scene.remove(b.m);bullets.splice(i,1)}
+  }
+  // foes
+  const sp=ship.position;
+  for(let i=foes.length-1;i>=0;i--){
+    const f=foes[i],p=f.obj.position;
+    if(f.type==='rock'){p.z+=SCROLL*dt;p.addScaledVector(f.drift,dt);f.obj.rotation.x+=f.spin.x*dt;f.obj.rotation.y+=f.spin.y*dt}
+    else if(f.type==='ring'){p.z+=SCROLL*dt;f.obj.rotation.z+=dt;
+      if(p.z>-.5&&!f.done){f.done=true;if(Math.hypot(p.x-sp.x,p.y-sp.y)<1.8){rings++;mental=Math.min(100,mental+12);sfx('heal');toast('有給を取った　＋12','good')}}}
+    else if(f.type==='sat'){f.ph+=dt;if(p.z<f.hold)p.z+=SCROLL*dt*.9;p.x+=Math.sin(f.ph*1.2)*dt*2.4;p.y+=Math.cos(f.ph*1.5)*dt*1.2;f.obj.rotation.y=Math.sin(f.ph)*.4;
+      f.led.visible=Math.sin(f.ph*10)>0;
+      f.fire-=dt; if(f.fire<=0&&p.z>-80){spawnShot(p.clone(),WORDS[(Math.random()*WORDS.length)|0],'#ff4fa3',20+elapsed*.08);f.fire=2.2+Math.random()*1.2}}
+    else if(f.type==='shot'){p.addScaledVector(f.v,dt)}
+    else if(f.type==='boss'){f.t+=dt;if(p.z<-45)p.z+=dt*20;p.x=Math.sin(f.t*.6)*4.5;p.y=1+Math.sin(f.t*.9)*1.6;f.ring.rotation.z+=dt*(f.hp<f.max/2?2.4:1.2);
+      f.fire-=dt;if(f.fire<=0){const n=f.hp<f.max/2?5:3;for(let k=0;k<n;k++){const from=p.clone();from.x+=(k-(n-1)/2)*2.4;from.z+=2;spawnShot(from,BOSS_WORDS[(Math.random()*BOSS_WORDS.length)|0],'#b8323a',18)}f.fire=f.hp<f.max/2?1.6:2.2}}
+    // collide with ship
+    if(f.type==='rock'||f.type==='shot'){
+      const rr=f.type==='rock'?f.r+.5:.8;
+      if(Math.abs(p.z)<1.2&&Math.hypot(p.x-sp.x,p.y-sp.y)<rr){hurt(f.dmg,f.label);if(f.type==='shot')kill(f);continue}
+    }
+    if(p.z>14){kill(f)}
+  }
+  if(comboT>0){comboT-=dt;if(comboT<=0){combo=0;$('#combo').classList.remove('on')}}
+  hud();
+}
+function kill(f){scene.remove(f.obj);const i=foes.indexOf(f);if(i>=0)foes.splice(i,1)}
+
+/* ---------- frame ---------- */
+const clk=new THREE.Clock();let camX=0,camY=0;
+function frame(){
+  requestAnimationFrame(frame);
+  const dt=Math.min(clk.getDelta(),1/30), t=clk.elapsedTime;
+  const spd=state==='play'?SCROLL*2:12;
+  const pa=starGeo.attributes.position;
+  for(let i=0;i<STAR_N;i++){let z=pa.getZ(i)+spd*dt;if(z>20)z-=220;pa.setZ(i,z)}
+  pa.needsUpdate=true;
+  if(state==='play')update(dt); else {ship.position.y=Math.sin(t*1.5)*.3;ship.rotation.z=Math.sin(t)*.1}
+  const prog=state==='play'||state==='clear'?Math.min(1,elapsed/BOSS_AT):0;
+  moon.position.z=-260+prog*150; moon.rotation.y+=dt*.02; earth.rotation.y+=dt*.03;
+  flame.scale.set(1,.8+Math.random()*.5,1);
+  ship.visible=state!=='dead'&&(inv<=0||Math.floor(inv*14)%2===0);
+  for(let i=pops.length-1;i>=0;i--){const p=pops[i];p.life-=dt;p.s.position.y+=dt*1.5;p.s.material.opacity=Math.max(0,p.life/.8);if(p.life<=0){scene.remove(p.s);pops.splice(i,1)}}
+  for(let i=debris.length-1;i>=0;i--){const d=debris[i];d.life-=dt;d.m.position.addScaledVector(d.v,dt);d.m.rotation.x+=dt*8;if(d.life<=0){scene.remove(d.m);debris.splice(i,1)}}
+  shake=Math.max(0,shake-dt); const sk=shake*shake*.6;
+  camX+=(ship.position.x*.55-camX)*Math.min(1,dt*4); camY+=(ship.position.y*.55-camY)*Math.min(1,dt*4);
+  camera.position.set(camX+(Math.random()-.5)*sk,camY+1.4+(Math.random()-.5)*sk,8.5);
+  camera.lookAt(camX*.8,camY*.8,-20);
+  if(toastT>0){toastT-=dt;if(toastT<=0)$('#toast').classList.remove('on')}
+  renderer.render(scene,camera);
+}
+frame();
+})();
+</script>
+</body>
+</html>
