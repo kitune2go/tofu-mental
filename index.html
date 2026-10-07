@@ -3,6 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="プレス機に押され、飛んでくる言葉に削られ、落ちれば石臼。崩れきる前に定時17:00へ。3D横スクロールアクション。">
+<meta property="og:type" content="website">
+<meta property="og:title" content="すり潰されて豆腐メンタル">
+<meta property="og:description" content="崩れきる前に定時17:00へ。豆腐が工場ラインを駆け抜ける3D横スクロールアクション。">
+<meta property="og:url" content="https://kitune2go.github.io/tofu-mental/">
+<meta property="og:image" content="https://kitune2go.github.io/tofu-mental/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://kitune2go.github.io/tofu-mental/og.png">
 <title>すり潰されて豆腐メンタル</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=M+PLUS+1+Code:wght@400;700&display=swap">
 <style>
@@ -50,6 +58,8 @@ h1 .b{display:block;font-size:clamp(44px,13vw,82px);color:var(--tofu);letter-spa
 .keys{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;text-align:left;font-size:13px;color:var(--muted);max-width:340px;margin:16px auto 0}
 .keys b{color:var(--ink);font-weight:700}
 .btn{margin-top:22px;font-family:var(--f-display);font-size:20px;color:#16110a;background:var(--hazard);border:0;border-radius:6px;padding:12px 34px;cursor:pointer;box-shadow:0 4px 0 #8a6510}
+.share{display:inline-block;margin:22px 0 0 10px;font-family:var(--f-display);font-size:18px;color:var(--ink);background:transparent;border:2px solid var(--ink);border-radius:6px;padding:10px 22px;text-decoration:none}
+.share:focus-visible{outline:2px solid var(--hazard);outline-offset:2px}
 .btn:active{transform:translateY(3px);box-shadow:0 1px 0 #8a6510}
 .result{font-size:15px;line-height:1.9;margin-top:6px;font-variant-numeric:tabular-nums}
 .result b{color:var(--hazard)}
@@ -112,6 +122,7 @@ h1 .b{display:block;font-size:clamp(44px,13vw,82px);color:var(--tofu);letter-spa
     <p class="lead" id="endLead"></p>
     <div class="result" id="endResult"></div>
     <button class="btn" id="retryBtn" type="button">もう一度出勤</button>
+    <a class="share" id="shareBtn" href="#" target="_blank" rel="noopener">Xでシェア</a>
   </div>
 </div>
 
@@ -429,6 +440,10 @@ function die(kicker,title,lead){
   burst(P.x,P.y+.3,60,7);
   setTimeout(()=>endScreen(kicker,title,lead,false),1100);
 }
+function shareText(win,title,tm,prog){
+  if(win)return `${tm} 定時退社！\n称号【${title}】\n残りメンタル${Math.ceil(P.mental)}（${tierOf(P.mental)}）／${playT.toFixed(1)}秒\n#すり潰されて豆腐メンタル`;
+  return `${tm} ${title}……\n進捗${Math.floor(prog*100)}%で力尽きた\n#すり潰されて豆腐メンタル`;
+}
 function endScreen(kicker,title,lead,win){
   $('#endKicker').textContent=kicker; $('#endTitle').textContent=title; $('#endLead').textContent=lead;
   const prog=Math.max(0,Math.min(1,P.x/GOAL)),min=480+Math.floor(prog*540);
@@ -441,6 +456,7 @@ function endScreen(kicker,title,lead,win){
     $('#endResult').innerHTML=`力尽きた時刻 <b>${tm}</b>　進捗 <b>${Math.floor(prog*100)}%</b>`;
     $('#retryBtn').textContent='もう一度出勤';
   }
+  $('#shareBtn').href='https://x.com/intent/post?text='+encodeURIComponent(shareText(win,title,tm,prog))+'&url='+encodeURIComponent('https://kitune2go.github.io/tofu-mental/');
   $('#ovEnd').hidden=false; deadT=0; showBest();
 }
 function win(){
