@@ -108,8 +108,8 @@ h1 .st{display:block;font-size:clamp(20px,5.6vw,30px);color:var(--neon);margin-t
     <p class="lead">黙って受け止めるのは今日まで。<br>奥から迫る言葉と着信ドローンを、豆腐で撃ち返せ。1分耐えると部長が来る。</p>
     <div class="keys">
       <b>タップ / クリック</b><span>その場所に撃つ（押しっぱなしで連射）</span>
-      <b>言葉</b><span>当たると −20。届く前に撃ち落とす</span>
-      <b>ドローン</b><span>3発で撃墜。言葉を撃ってくる</span>
+      <b>言葉</b><span>当たると −12。届く前に撃ち落とす</span>
+      <b>ドローン</b><span>2発で撃墜。言葉を撃ってくる</span>
       <b>醤油</b><span>撃つとメンタル ＋15</span>
     </div>
     <div class="btns">
@@ -244,19 +244,19 @@ function spawnWord(fast){
   const t=WORDS[(Math.random()*WORDS.length)|0],hgt=.9,s=sprite(t,hgt);
   s.position.set((Math.random()-.5)*10,1+Math.random()*3.2,-70);scene.add(s);
   const target=new THREE.Vector3((Math.random()-.5)*1.2,1.4+Math.random()*.6,0);
-  const v=target.sub(s.position).normalize().multiplyScalar((fast?17:11)+Math.random()*4+elapsed*.08);
-  foes.push({type:'word',obj:s,v,hp:1,hw:s.scale.x/2,hh:hgt/2,pts:100,dmg:20,label:t});
+  const v=target.sub(s.position).normalize().multiplyScalar((fast?12:8)+Math.random()*3+elapsed*.05);
+  foes.push({type:'word',obj:s,v,hp:1,hw:s.scale.x/2+.3,hh:hgt/2+.3,pts:100,dmg:12,label:t});
 }
 function spawnShot(from,t,speed,col){
   const hgt=.6,s=sprite(t,hgt,col);s.position.copy(from);scene.add(s);
   const target=new THREE.Vector3((Math.random()-.5)*.8,1.5,0);
   const v=target.sub(from).normalize().multiplyScalar(speed);
-  foes.push({type:'shot',obj:s,v,hp:1,hw:s.scale.x/2,hh:hgt/2,pts:50,dmg:15,label:t});
+  foes.push({type:'shot',obj:s,v,hp:1,hw:s.scale.x/2+.3,hh:hgt/2+.3,pts:50,dmg:10,label:t});
 }
 function spawnDrone(){
   const m=model('drone',1.6,{center:true});m.position.set((Math.random()-.5)*8,2.5+Math.random()*2,-60);scene.add(m);
   m.traverse(o=>{if(o.isMesh)o.material=o.material.clone()});
-  foes.push({type:'drone',obj:m,hp:3,hw:.9,hh:.9,pts:300,ph:Math.random()*6,hold:-16-Math.random()*8,fire:1.5+Math.random(),hit:0});
+  foes.push({type:'drone',obj:m,hp:2,hw:1.2,hh:1.2,pts:300,ph:Math.random()*6,hold:-16-Math.random()*8,fire:1.5+Math.random(),hit:0});
 }
 function spawnShoyu(){
   const g=new THREE.Group();
@@ -269,7 +269,7 @@ function spawnBoss(){
   const m=model('drone',6,{center:true});m.position.set(0,4,-70);scene.add(m);
   m.traverse(o=>{if(o.isMesh)o.material=o.material.clone()});
   const tag=sprite('部長',1,'#f0b92b');tag.position.set(0,2.6/m.scale.x,0);m.add(tag);tag.scale.multiplyScalar(1/m.scale.x);
-  boss={type:'boss',obj:m,hp:40,max:40,hw:3,hh:2.4,pts:3000,fire:2,hit:0,t:0};
+  boss={type:'boss',obj:m,hp:30,max:30,hw:3,hh:2.4,pts:3000,fire:2,hit:0,t:0};
   foes.push(boss);
   $('#bossBox').hidden=false; toast('部長ドローン出現！','bad'); sfx('boss');
 }
@@ -347,7 +347,7 @@ $('#retryBtn').addEventListener('click',start);
 
 function hurt(n,label){
   if(inv>0||state!=='play')return;
-  mental=Math.max(0,mental-n); inv=.6; shake=.5; flash(); sfx('hit'); combo=0;
+  mental=Math.max(0,mental-n); inv=1.0; shake=.5; flash(); sfx('hit'); combo=0;
   toast('「'+label+'」　−'+n,'bad');
   if(mental<=0)end(false);
 }
@@ -389,22 +389,25 @@ function update(dt){
   elapsed+=dt; inv=Math.max(0,inv-dt);
   // spawning
   if(!boss){
-    spawnW-=dt; if(spawnW<=0){spawnWord(Math.random()<elapsed/120);spawnW=Math.max(.45,1.35-elapsed*.014)+Math.random()*.4}
-    spawnD-=dt; if(spawnD<=0){spawnDrone();spawnD=Math.max(3.2,7-elapsed*.06)+Math.random()*2}
+    spawnW-=dt; if(spawnW<=0){spawnWord(Math.random()<elapsed/120);spawnW=Math.max(.8,1.8-elapsed*.012)+Math.random()*.5}
+    spawnD-=dt; if(spawnD<=0){spawnDrone();spawnD=Math.max(4.5,8-elapsed*.05)+Math.random()*2}
     if(elapsed>=BOSS_AT)spawnBoss();
   }else{
     spawnW-=dt; if(spawnW<=0){spawnWord(false);spawnW=2.4+Math.random()}
   }
-  spawnS-=dt; if(spawnS<=0){spawnShoyu();spawnS=13+Math.random()*6}
+  spawnS-=dt; if(spawnS<=0){spawnShoyu();spawnS=9+Math.random()*4}
   // firing
   fireCd-=dt; if(firing&&fireCd<=0){fire();fireCd=.14}
   // bullets
   for(let i=bullets.length-1;i>=0;i--){
-    const b=bullets[i];b.life-=dt;b.m.position.addScaledVector(b.v,dt);b.m.rotation.x+=dt*12;b.m.rotation.y+=dt*9;
+    const b=bullets[i];b.life-=dt;b.m.rotation.x+=dt*12;b.m.rotation.y+=dt*9;
     let hit=null;
-    for(const f of foes){
-      const p=f.obj.position;
-      if(Math.abs(b.m.position.x-p.x)<f.hw&&Math.abs(b.m.position.y-p.y)<f.hh&&Math.abs(b.m.position.z-p.z)<(f.type==='boss'?2.5:1.2)){hit=f;break}
+    for(let k=0;k<4&&!hit;k++){
+      b.m.position.addScaledVector(b.v,dt/4);
+      for(const f of foes){
+        const p=f.obj.position;
+        if(Math.abs(b.m.position.x-p.x)<f.hw&&Math.abs(b.m.position.y-p.y)<f.hh&&Math.abs(b.m.position.z-p.z)<(f.type==='boss'?2.5:1.6)){hit=f;break}
+      }
     }
     if(hit){
       scene.remove(b.m);bullets.splice(i,1);
@@ -431,12 +434,12 @@ function update(dt){
     }else if(f.type==='drone'){
       f.ph+=dt; if(p.z<f.hold)p.z+=dt*10; p.x+=Math.sin(f.ph*1.3)*dt*2.2; p.y+=Math.cos(f.ph*1.7)*dt*.8;
       f.obj.lookAt(camera.position);
-      f.fire-=dt; if(f.fire<=0&&p.z>-40){spawnShot(p.clone(),WORDS[(Math.random()*WORDS.length)|0],13+elapsed*.05);f.fire=2.3+Math.random()*1.2}
+      f.fire-=dt; if(f.fire<=0&&p.z>-40){spawnShot(p.clone(),WORDS[(Math.random()*WORDS.length)|0],9+elapsed*.03);f.fire=3+Math.random()*1.5}
     }else if(f.type==='boss'){
       f.t+=dt; if(p.z<-26)p.z+=dt*6; p.x=Math.sin(f.t*.7)*4; p.y=4+Math.sin(f.t*1.1)*1.2;
       f.obj.lookAt(camera.position);
       f.fire-=dt;
-      if(f.fire<=0){const n=f.hp<f.max/2?5:3;for(let k=0;k<n;k++){const from=p.clone();from.x+=(k-(n-1)/2)*1.6;spawnShot(from,BOSS_WORDS[(Math.random()*BOSS_WORDS.length)|0],12+(f.hp<f.max/2?4:0),'#b8323a')}f.fire=f.hp<f.max/2?1.4:2}
+      if(f.fire<=0){const n=f.hp<f.max/2?4:3;for(let k=0;k<n;k++){const from=p.clone();from.x+=(k-(n-1)/2)*1.6;spawnShot(from,BOSS_WORDS[(Math.random()*BOSS_WORDS.length)|0],9+(f.hp<f.max/2?2:0),'#b8323a')}f.fire=f.hp<f.max/2?1.9:2.6}
     }
   }
   if(comboT>0){comboT-=dt;if(comboT<=0){combo=0;$('#combo').classList.remove('on')}}
