@@ -110,6 +110,7 @@ h1 .b{display:block;font-size:clamp(44px,13vw,82px);color:var(--tofu);letter-spa
       <b>醤油・ネギ・生姜</b><span>メンタル回復</span>
     </div>
     <button class="btn" id="startBtn" type="button">出勤する</button>
+    <a class="share" href="stage2.html">2面から</a>
     <div class="note" id="best"></div>
   </div>
 </div>
@@ -122,6 +123,7 @@ h1 .b{display:block;font-size:clamp(44px,13vw,82px);color:var(--tofu);letter-spa
     <p class="lead" id="endLead"></p>
     <div class="result" id="endResult"></div>
     <button class="btn" id="retryBtn" type="button">もう一度出勤</button>
+    <a class="share" id="nextBtn" href="stage2.html" hidden>2面へ（帰り道）</a>
     <a class="share" id="shareBtn" href="#" target="_blank" rel="noopener">Xでシェア</a>
   </div>
 </div>
@@ -452,9 +454,11 @@ function endScreen(kicker,title,lead,win){
     const best=getBest(),nb=!best||playT<best; if(nb)setBest(playT);
     $('#endResult').innerHTML=`所要 <b>${playT.toFixed(1)} 秒</b>${nb?'（自己ベスト）':''}<br>残りメンタル <b>${Math.ceil(P.mental)}</b>（${tierOf(P.mental)}）`;
     $('#retryBtn').textContent='翌日も出勤';
+    $('#nextBtn').hidden=false; try{sessionStorage.setItem('tofuCarry',String(Math.max(1,P.mental)))}catch(e){}
   }else{
     $('#endResult').innerHTML=`力尽きた時刻 <b>${tm}</b>　進捗 <b>${Math.floor(prog*100)}%</b>`;
     $('#retryBtn').textContent='もう一度出勤';
+    $('#nextBtn').hidden=true;
   }
   $('#shareBtn').href='https://x.com/intent/post?text='+encodeURIComponent(shareText(win,title,tm,prog))+'&url='+encodeURIComponent('https://tofu-mental-seven.vercel.app/');
   $('#ovEnd').hidden=false; deadT=0; showBest();
