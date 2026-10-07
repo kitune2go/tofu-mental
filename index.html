@@ -7,10 +7,10 @@
 <meta property="og:type" content="website">
 <meta property="og:title" content="すり潰されて豆腐メンタル">
 <meta property="og:description" content="崩れきる前に定時17:00へ。豆腐が工場ラインを駆け抜ける3D横スクロールアクション。">
-<meta property="og:url" content="https://tofu-mental-game.vercel.app/">
-<meta property="og:image" content="https://tofu-mental-game.vercel.app/og.png">
+<meta property="og:url" content="https://tofu-mental-seven.vercel.app/">
+<meta property="og:image" content="https://tofu-mental-seven.vercel.app/og.png">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="https://tofu-mental-game.vercel.app/og.png">
+<meta name="twitter:image" content="https://tofu-mental-seven.vercel.app/og.png">
 <title>すり潰されて豆腐メンタル</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=M+PLUS+1+Code:wght@400;700&display=swap">
 <style>
@@ -456,7 +456,7 @@ function endScreen(kicker,title,lead,win){
     $('#endResult').innerHTML=`力尽きた時刻 <b>${tm}</b>　進捗 <b>${Math.floor(prog*100)}%</b>`;
     $('#retryBtn').textContent='もう一度出勤';
   }
-  $('#shareBtn').href='https://x.com/intent/post?text='+encodeURIComponent(shareText(win,title,tm,prog))+'&url='+encodeURIComponent('https://tofu-mental-game.vercel.app/');
+  $('#shareBtn').href='https://x.com/intent/post?text='+encodeURIComponent(shareText(win,title,tm,prog))+'&url='+encodeURIComponent('https://tofu-mental-seven.vercel.app/');
   $('#ovEnd').hidden=false; deadT=0; showBest();
 }
 function win(){
