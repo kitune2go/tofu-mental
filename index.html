@@ -1,0 +1,577 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>すり潰されて豆腐メンタル</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=M+PLUS+1+Code:wght@400;700&display=swap">
+<style>
+html{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+
+/* Layout: full-screen 3D stage, HUD pinned top, touch pad pinned bottom, overlays centered. Single committed dark "night shift" look. */
+:root{
+  --night:#141b25; --panel:rgba(16,22,31,.78); --steel:#2b3544; --line:#3d4a5c;
+  --tofu:#f6f3ea; --hazard:#f0b92b; --soy:#7a3c18; --alert:#e5483c; --negi:#5fae4e;
+  --ink:#e9edf2; --muted:#98a5b6;
+  --f-display:"Dela Gothic One","Hiragino Sans","Yu Gothic","Meiryo",sans-serif;
+  --f-ui:"M PLUS 1 Code","Hiragino Sans","Yu Gothic","Meiryo",monospace;
+  color-scheme:dark;
+}
+html,body{height:100%;margin:0;overflow:hidden;background:var(--night);color:var(--ink);font-family:var(--f-ui);-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+#c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+.hud{position:fixed;left:0;right:0;top:0;padding:calc(env(safe-area-inset-top,0px) + 10px) 16px 0;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;pointer-events:none;z-index:5}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:8px 12px}
+.mental{min-width:0;flex:0 1 260px}
+.lbl{font-size:11px;letter-spacing:.12em;color:var(--muted);display:flex;justify-content:space-between;gap:8px}
+.tier{color:var(--tofu);font-weight:700;letter-spacing:.04em}
+.bar{margin-top:6px;height:12px;background:#0b1017;border-radius:3px;overflow:hidden;border:1px solid var(--line)}
+.fill{height:100%;width:100%;background:var(--tofu);transition:width .25s ease,background-color .25s}
+.clock{text-align:right}
+.time{font-family:var(--f-display);font-size:28px;line-height:1;font-variant-numeric:tabular-nums;color:var(--hazard)}
+.sub{font-size:11px;color:var(--muted);margin-top:4px;letter-spacing:.06em;font-variant-numeric:tabular-nums}
+.mute{pointer-events:auto;margin-top:6px;font:inherit;font-size:11px;color:var(--muted);background:transparent;border:1px solid var(--line);border-radius:4px;padding:3px 8px;cursor:pointer}
+.mute:focus-visible,.btn:focus-visible{outline:2px solid var(--hazard);outline-offset:2px}
+.toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 92px);transform:translateX(-50%);font-weight:700;font-size:16px;color:var(--tofu);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:6px 14px;white-space:nowrap;opacity:0;transition:opacity .2s;pointer-events:none;z-index:6}
+.toast.on{opacity:1}
+.toast.bad{color:#ffb3ab;border-color:var(--alert)}
+.toast.good{color:#cfeec5;border-color:var(--negi)}
+.flash{position:fixed;inset:0;pointer-events:none;box-shadow:inset 0 0 0 0 rgba(229,72,60,0);transition:box-shadow .35s;z-index:4}
+.flash.on{box-shadow:inset 0 0 90px 30px rgba(229,72,60,.55);transition:none}
+.overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(14,19,27,.8);z-index:10}
+.card{max-width:520px;width:100%;text-align:center}
+.kicker{font-size:13px;letter-spacing:.3em;color:var(--muted)}
+h1{font-family:var(--f-display);font-weight:400;margin:10px 0 0;line-height:1.05;text-wrap:balance}
+h1 .s{display:block;font-size:clamp(20px,5vw,28px);color:var(--ink)}
+h1 .b{display:block;font-size:clamp(44px,13vw,82px);color:var(--tofu);letter-spacing:.02em}
+.stripe{height:12px;margin:14px auto 18px;max-width:340px;background:repeating-linear-gradient(-45deg,var(--hazard) 0 14px,#16110a 14px 28px);border-radius:2px}
+.lead{font-size:15px;line-height:1.7;color:var(--ink);margin:0 auto;max-width:34em}
+.keys{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;text-align:left;font-size:13px;color:var(--muted);max-width:340px;margin:16px auto 0}
+.keys b{color:var(--ink);font-weight:700}
+.btn{margin-top:22px;font-family:var(--f-display);font-size:20px;color:#16110a;background:var(--hazard);border:0;border-radius:6px;padding:12px 34px;cursor:pointer;box-shadow:0 4px 0 #8a6510}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 #8a6510}
+.result{font-size:15px;line-height:1.9;margin-top:6px;font-variant-numeric:tabular-nums}
+.result b{color:var(--hazard)}
+.note{font-size:12px;color:var(--muted);margin-top:12px}
+.pad{position:fixed;left:0;right:0;bottom:0;padding:0 16px calc(env(safe-area-inset-bottom,0px) + 16px);display:none;justify-content:space-between;align-items:flex-end;z-index:6;pointer-events:none}
+.pad .grp{display:flex;gap:12px}
+.pb{pointer-events:auto;touch-action:none;width:68px;height:68px;border-radius:50%;border:2px solid rgba(233,237,242,.35);background:rgba(16,22,31,.55);color:var(--ink);font:700 22px var(--f-ui);display:flex;align-items:center;justify-content:center}
+.pb.jump{width:84px;height:84px;font-size:15px;border-color:rgba(240,185,43,.7);color:var(--hazard)}
+.pb.on{background:rgba(240,185,43,.3)}
+@media (pointer:coarse){.pad{display:flex}}
+@media (prefers-reduced-motion:reduce){.fill,.toast{transition:none}}
+</style>
+</head>
+<body>
+<canvas id="c" aria-label="ゲーム画面"></canvas>
+<div class="flash" id="flash"></div>
+
+<div class="hud">
+  <div class="box mental">
+    <div class="lbl"><span>メンタル</span><span><span class="tier" id="tier">木綿</span> <span id="mval">100</span></span></div>
+    <div class="bar"><div class="fill" id="fill"></div></div>
+  </div>
+  <div class="box clock">
+    <div class="time" id="time">08:00</div>
+    <div class="sub" id="sub">定時 17:00</div>
+    <button class="mute" id="mute" type="button">音 ON</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<div class="pad" id="pad">
+  <div class="grp">
+    <button class="pb" id="bl" type="button" aria-label="左">◀</button>
+    <button class="pb" id="br" type="button" aria-label="右">▶</button>
+  </div>
+  <button class="pb jump" id="bj" type="button">ジャンプ</button>
+</div>
+
+<div class="overlay" id="ovTitle">
+  <div class="card">
+    <div class="kicker">第一工程・夜勤ライン</div>
+    <h1><span class="s">すり潰されて</span><span class="b">豆腐メンタル</span></h1>
+    <div class="stripe"></div>
+    <p class="lead">プレス機に押され、飛んでくる言葉に削られ、落ちれば石臼。<br>崩れきる前に定時（17:00）へ。</p>
+    <div class="keys">
+      <b>← → / A D</b><span>移動</span>
+      <b>Space / ↑ / W</b><span>ジャンプ（空中でもう一回）</span>
+      <b>醤油・ネギ・生姜</b><span>メンタル回復</span>
+    </div>
+    <button class="btn" id="startBtn" type="button">出勤する</button>
+    <div class="note" id="best"></div>
+  </div>
+</div>
+
+<div class="overlay" id="ovEnd" hidden>
+  <div class="card">
+    <div class="kicker" id="endKicker">作業中断</div>
+    <h1><span class="b" id="endTitle" style="font-size:clamp(34px,9vw,56px)">おから</span></h1>
+    <div class="stripe"></div>
+    <p class="lead" id="endLead"></p>
+    <div class="result" id="endResult"></div>
+    <button class="btn" id="retryBtn" type="button">もう一度出勤</button>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(()=>{
+const $=s=>document.querySelector(s);
+const GOAL=240, G=32, JV=11.2, SPEED=6.2;
+
+/* ---------- renderer ---------- */
+const canvas=$('#c');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+renderer.setPixelRatio(Math.min(2,window.devicePixelRatio||1));
+renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.outputEncoding=THREE.sRGBEncoding;
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x141b25);
+scene.fog=new THREE.Fog(0x141b25,20,52);
+const camera=new THREE.PerspectiveCamera(40,1,0.1,140);
+scene.add(new THREE.HemisphereLight(0xbcd0ff,0x2c2218,0.6));
+const sun=new THREE.DirectionalLight(0xfff0d8,0.95);
+sun.castShadow=true; sun.shadow.mapSize.set(1024,1024);
+Object.assign(sun.shadow.camera,{left:-16,right:16,top:12,bottom:-6,near:1,far:40});
+scene.add(sun,sun.target);
+const amb=new THREE.PointLight(0xffb36b,0.6,30); scene.add(amb);
+
+let camDist=14;
+function resize(){
+  const w=innerWidth,h=innerHeight; renderer.setSize(w,h,false);
+  camera.aspect=w/h; camera.updateProjectionMatrix();
+  camDist=Math.max(13,Math.min(24,15/Math.min(camera.aspect,1.5)*1.25));
+}
+addEventListener('resize',resize); resize();
+
+/* ---------- textures ---------- */
+function ctex(w,h,draw,rep){const c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d');draw(g,w,h);const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;t.anisotropy=4;if(rep){t.wrapS=t.wrapT=THREE.RepeatWrapping}return t}
+const plateImg=ctex(128,128,(g,w,h)=>{g.fillStyle='#4a5566';g.fillRect(0,0,w,h);g.strokeStyle='#5d6a7d';g.lineWidth=3;for(let y=8;y<h;y+=22)for(let x=(y/22%2)*11+6;x<w;x+=22){g.beginPath();g.moveTo(x-5,y+4);g.lineTo(x+5,y-4);g.stroke()}g.strokeStyle='#323b48';g.lineWidth=2;g.strokeRect(1,1,w-2,h-2)},true);
+const frontImg=ctex(256,128,(g,w,h)=>{g.fillStyle='#2e3746';g.fillRect(0,0,w,h);g.save();g.beginPath();g.rect(0,0,w,20);g.clip();for(let x=-40;x<w+40;x+=32){g.fillStyle='#f0b92b';g.beginPath();g.moveTo(x,0);g.lineTo(x+16,0);g.lineTo(x-4,20);g.lineTo(x-20,20);g.fill()}g.restore();g.fillStyle='#1d242f';g.fillRect(0,20,w,3);g.fillStyle='#3a4555';for(let x=20;x<w;x+=64)g.fillRect(x,40,3,80)},true);
+const beltImg=ctex(128,64,(g,w,h)=>{g.fillStyle='#22272e';g.fillRect(0,0,w,h);g.fillStyle='#343b45';for(let x=0;x<w;x+=16)g.fillRect(x,0,6,h)},true);
+const hazardImg=ctex(256,64,(g,w,h)=>{g.fillStyle='#16110a';g.fillRect(0,0,w,h);for(let x=-64;x<w+64;x+=40){g.fillStyle='#f0b92b';g.beginPath();g.moveTo(x,0);g.lineTo(x+20,0);g.lineTo(x-12,h);g.lineTo(x-32,h);g.fill()}});
+const stoneImg=ctex(256,256,(g,w,h)=>{g.fillStyle='#7c7a74';g.fillRect(0,0,w,h);for(let i=0;i<900;i++){g.fillStyle=`rgba(${Math.random()<.5?40:200},${Math.random()<.5?40:200},40,.08)`;g.fillRect(Math.random()*w,Math.random()*h,3,3)}g.strokeStyle='#4e4c47';g.lineWidth=4;for(let a=0;a<16;a++){const t=a/16*Math.PI*2;g.beginPath();g.moveTo(w/2,h/2);g.lineTo(w/2+Math.cos(t)*w/2,h/2+Math.sin(t)*h/2);g.stroke()}});
+const wallImg=ctex(256,256,(g,w,h)=>{g.fillStyle='#1c2430';g.fillRect(0,0,w,h);g.strokeStyle='#243041';g.lineWidth=3;for(let x=0;x<=w;x+=64){g.beginPath();g.moveTo(x,0);g.lineTo(x,h);g.stroke()}for(let y=0;y<=h;y+=128){g.beginPath();g.moveTo(0,y);g.lineTo(w,y);g.stroke()}},true);
+
+/* ---------- materials ---------- */
+const M={
+  side:new THREE.MeshStandardMaterial({color:0x252d39,roughness:.8}),
+  steel:new THREE.MeshStandardMaterial({color:0x56637a,roughness:.45,metalness:.6}),
+  dark:new THREE.MeshStandardMaterial({color:0x2a313c,roughness:.6,metalness:.4}),
+  hazard:new THREE.MeshStandardMaterial({map:hazardImg,roughness:.5}),
+  stone:new THREE.MeshStandardMaterial({map:stoneImg,roughness:.95}),
+  wood:new THREE.MeshStandardMaterial({color:0x9a7347,roughness:.85}),
+  tofu:new THREE.MeshStandardMaterial({color:0xf6f3ea,roughness:.5,emissive:0x2a2822}),
+  black:new THREE.MeshBasicMaterial({color:0x1a1a1a}),
+  warn:new THREE.MeshBasicMaterial({color:0xe5483c,transparent:true,opacity:0,depthWrite:false}),
+};
+
+/* ---------- RNG + level ---------- */
+function rng(s){return()=>{s|=0;s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const R=rng(4810);
+const segs=[],plats=[],presses=[],grinders=[],pickups=[],belts=[];
+function addSeg(x0,x1,conv){
+  const len=x1-x0, s={x0,x1,top:0,conv};
+  const top=conv? new THREE.MeshStandardMaterial({map:beltImg.clone(),roughness:.9}) : new THREE.MeshStandardMaterial({map:plateImg.clone(),roughness:.55,metalness:.3});
+  top.map.needsUpdate=true; top.map.repeat.set(len/2,conv?1:2);
+  const fr=new THREE.MeshStandardMaterial({map:frontImg.clone(),roughness:.7}); fr.map.needsUpdate=true; fr.map.repeat.set(len/4,1);
+  const m=new THREE.Mesh(new THREE.BoxGeometry(len,3,4),[M.side,M.side,top,M.side,fr,M.side]);
+  m.position.set(x0+len/2,-1.5,0); m.receiveShadow=true; scene.add(m);
+  if(conv){ s.tex=top.map; belts.push(s);
+    for(let x=x0+1;x<x1-0.5;x+=1.6){const a=new THREE.Mesh(new THREE.ConeGeometry(.18,.4,3),new THREE.MeshBasicMaterial({color:0xf0b92b}));a.rotation.z=conv>0?-Math.PI/2:Math.PI/2;a.position.set(x,-.45,2.02);a.scale.z=.1;scene.add(a)}
+  }
+  segs.push(s); return s;
+}
+function addPlat(x,y,w){
+  const g=new THREE.Group();
+  const top=new THREE.Mesh(new THREE.BoxGeometry(w,.18,1.6),M.wood); top.castShadow=top.receiveShadow=true; g.add(top);
+  for(const dx of[-w/2+.2,0,w/2-.2]){const b=new THREE.Mesh(new THREE.BoxGeometry(.25,.2,1.6),M.wood);b.position.set(dx,-.19,0);g.add(b)}
+  g.position.set(x,y-.09,0); scene.add(g);
+  plats.push({x0:x-w/2,x1:x+w/2,top:y});
+}
+function addPress(x,period,phase){
+  const g=new THREE.Group(); g.position.x=x; scene.add(g);
+  const col=new THREE.Mesh(new THREE.BoxGeometry(1.1,7,1),M.dark); col.position.set(0,3.5,-1.9); col.castShadow=true; g.add(col);
+  const arm=new THREE.Mesh(new THREE.BoxGeometry(1.4,1,2.4),M.dark); arm.position.set(0,6.6,-0.8); arm.castShadow=true; g.add(arm);
+  const rod=new THREE.Mesh(new THREE.CylinderGeometry(.22,.22,1,12),M.steel); g.add(rod);
+  const head=new THREE.Group(); g.add(head);
+  const hb=new THREE.Mesh(new THREE.BoxGeometry(2,.7,1.7),[M.steel,M.steel,M.steel,M.steel,M.hazard,M.steel]); hb.position.y=.35; hb.castShadow=true; head.add(hb);
+  const plate=new THREE.Mesh(new THREE.BoxGeometry(2.1,.12,1.8),M.dark); plate.position.y=.06; head.add(plate);
+  const warn=new THREE.Mesh(new THREE.PlaneGeometry(2.2,1.8),M.warn.clone()); warn.rotation.x=-Math.PI/2; warn.position.set(0,.02,0); g.add(warn);
+  presses.push({x,period,phase,head,rod,warn,lastU:0});
+}
+function addGrinder(x0,x1){
+  const r=Math.min(2.4,(x1-x0)/2+.3), cx=(x0+x1)/2;
+  const a=new THREE.Mesh(new THREE.CylinderGeometry(r,r,.6,32),M.stone); a.position.set(cx,-2.6,0);
+  const b=new THREE.Mesh(new THREE.CylinderGeometry(r,r,.6,32),M.stone); b.position.set(cx,-3.25,0);
+  const glow=new THREE.PointLight(0xe5483c,.5,5); glow.position.set(cx,-1.5,1.5);
+  scene.add(a,b,glow); grinders.push({a,b});
+}
+const PK={negi:{v:12,label:'ネギを添えた'},shoyu:{v:20,label:'醤油をかけた'},shoga:{v:15,label:'生姜をのせた'}};
+function addPickup(x,y,kind){
+  const g=new THREE.Group();
+  if(kind==='negi'){
+    const s=new THREE.Mesh(new THREE.CylinderGeometry(.12,.12,.8,10),new THREE.MeshStandardMaterial({color:0x5fae4e,roughness:.6})); s.position.y=.15; g.add(s);
+    const w=new THREE.Mesh(new THREE.CylinderGeometry(.13,.13,.3,10),new THREE.MeshStandardMaterial({color:0xf1f1e4})); w.position.y=-.38; g.add(w); g.rotation.z=.5;
+  }else if(kind==='shoyu'){
+    const b=new THREE.Mesh(new THREE.CylinderGeometry(.22,.26,.6,14),new THREE.MeshStandardMaterial({color:0x4a220c,roughness:.25,metalness:.1})); g.add(b);
+    const n=new THREE.Mesh(new THREE.CylinderGeometry(.09,.18,.22,12),new THREE.MeshStandardMaterial({color:0xd8342a})); n.position.y=.41; g.add(n);
+  }else{
+    const s=new THREE.Mesh(new THREE.DodecahedronGeometry(.28),new THREE.MeshStandardMaterial({color:0xe2c46c,roughness:.7})); s.scale.set(1.3,.8,1); g.add(s);
+  }
+  g.traverse(o=>{if(o.isMesh)o.castShadow=true});
+  g.position.set(x,y,0); scene.add(g);
+  pickups.push({x,y,kind,g,taken:false});
+}
+// layout
+addSeg(-14,18,0);
+addPickup(12,.9,'negi');
+let x=18;
+while(x<GOAL-16){
+  const prog=x/GOAL;
+  let gap;
+  if(R()<.28){ gap=5.6+R()*1.6; addPlat(x+gap/2,1.7,2.4); }
+  else gap=2.2+R()*(1.2+prog*.6);
+  addGrinder(x,x+gap); x+=gap;
+  const len=Math.min(8+R()*10, GOAL-x);
+  const conv=(x>40&&R()<.3)?(R()<.5?-2.6:2.4):0;
+  addSeg(x,x+len,conv);
+  if(len>=8){
+    const per=2.2+R()*1.1-prog*.5;
+    if(len>=15){addPress(x+len*.32,per,R());addPress(x+len*.72,per,R())}
+    else addPress(x+len/2,per,R());
+  }
+  if(R()<.35){const px=x+2+R()*(len-4);addPlat(px,2.4,2.2);if(R()<.7)addPickup(px,3.1,R()<.4?'shoyu':'shoga')}
+  else if(R()<.3)addPickup(x+1.5,.9,R()<.5?'negi':'shoga');
+  x+=len;
+}
+addGrinder(x,x+2.6); x+=2.6;
+addSeg(x,GOAL+24,0);
+// goal gate
+(function(){
+  const g=new THREE.Group(); g.position.x=GOAL; scene.add(g);
+  for(const z of[-1.5,1.5]){const p=new THREE.Mesh(new THREE.BoxGeometry(.4,5,.4),M.steel);p.position.set(0,2.5,z);p.castShadow=true;g.add(p)}
+  const sign=ctex(512,192,(c,w,h)=>{c.fillStyle='#f0b92b';c.fillRect(0,0,w,h);c.fillStyle='#16110a';c.font='bold 96px "Dela Gothic One","Hiragino Sans",sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillText('退勤 17:00',w/2,h/2+6)});
+  const sp=new THREE.Mesh(new THREE.BoxGeometry(3.6,1.35,.2),[M.dark,M.dark,M.dark,M.dark,new THREE.MeshBasicMaterial({map:sign}),M.dark]); sp.position.set(0,5.2,0); g.add(sp);
+  const l=new THREE.PointLight(0xf0b92b,1.2,10); l.position.set(0,4,2); g.add(l);
+})();
+
+/* ---------- backdrop ---------- */
+const wall=new THREE.Mesh(new THREE.PlaneGeometry(GOAL+90,24),new THREE.MeshStandardMaterial({map:wallImg,roughness:.9}));
+wall.material.map.repeat.set((GOAL+90)/6,3); wall.position.set(GOAL/2,8,-12); scene.add(wall);
+const floorBack=new THREE.Mesh(new THREE.PlaneGeometry(GOAL+90,12),new THREE.MeshStandardMaterial({color:0x1a212b,roughness:.9}));
+floorBack.rotation.x=-Math.PI/2; floorBack.position.set(GOAL/2,-0.6,-7); scene.add(floorBack);
+const BR=rng(77), machineCols=[0x3a4a52,0x4a4a3c,0x344055,0x553b33];
+const lamps=[];
+for(let bx=-14;bx<GOAL+30;bx+=4+BR()*5){
+  const w=2+BR()*3,h=2+BR()*5,d=2+BR()*2;
+  const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color:machineCols[(BR()*4)|0],roughness:.7,metalness:.3}));
+  m.position.set(bx,h/2-.6,-6-BR()*3.5); m.receiveShadow=true; scene.add(m);
+  if(BR()<.6){const c=BR()<.7?0x5fdc6a:0xffa13b;const lamp=new THREE.Mesh(new THREE.BoxGeometry(.25,.25,.05),new THREE.MeshBasicMaterial({color:c}));lamp.position.set(bx-w/2+.5,h-1,m.position.z+d/2+.03);scene.add(lamp);lamps.push({m:lamp,c,ph:BR()*6})}
+}
+for(let lx=-10;lx<GOAL+30;lx+=9){
+  const t=new THREE.Mesh(new THREE.BoxGeometry(3.2,.12,.3),new THREE.MeshBasicMaterial({color:0xe9f1ff}));
+  t.position.set(lx,10.5,-3); scene.add(t);
+}
+const pipe=new THREE.Mesh(new THREE.CylinderGeometry(.35,.35,GOAL+90,14),new THREE.MeshStandardMaterial({color:0x7d5b3a,roughness:.5,metalness:.5}));
+pipe.rotation.z=Math.PI/2; pipe.position.set(GOAL/2,8.6,-8); scene.add(pipe);
+function banners(){
+  const words=['ご安全に！','整理・整頓・清掃','指差し確認','不良ゼロ','品質は工程で作り込む','安全第一','ヨシ！','5S 推進中','段取り八分'];
+  let i=0;
+  for(let bx=6;bx<GOAL;bx+=26){
+    const t=words[i++%words.length];
+    const tex=ctex(512,128,(c,w,h)=>{c.fillStyle='#e9e4d6';c.fillRect(0,0,w,h);c.fillStyle='#1d5a3a';c.fillRect(0,0,w,14);c.fillRect(0,h-14,w,14);c.fillStyle='#1d2a24';c.font='bold 64px "M PLUS 1 Code","Hiragino Sans",sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillText(t,w/2,h/2+4)});
+    const b=new THREE.Mesh(new THREE.PlaneGeometry(6,1.5),new THREE.MeshStandardMaterial({map:tex,roughness:.9}));
+    b.position.set(bx,6.8,-5.6); scene.add(b);
+  }
+}
+(document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(banners,banners);
+
+/* ---------- player ---------- */
+function roundedBox(w,h,d,r,s){
+  const g=new THREE.BoxGeometry(w,h,d,s,s,s),p=g.attributes.position,v=new THREE.Vector3(),c=new THREE.Vector3();
+  const ix=w/2-r,iy=h/2-r,iz=d/2-r;
+  for(let i=0;i<p.count;i++){v.fromBufferAttribute(p,i);c.set(Math.max(-ix,Math.min(ix,v.x)),Math.max(-iy,Math.min(iy,v.y)),Math.max(-iz,Math.min(iz,v.z)));const n=v.clone().sub(c);if(n.lengthSq()>1e-9){n.normalize().multiplyScalar(r);v.copy(c).add(n)}p.setXYZ(i,v.x,v.y,v.z)}
+  g.computeVertexNormals(); g.translate(0,h/2,0); return g;
+}
+const tofu=new THREE.Group(); scene.add(tofu);
+const body=new THREE.Mesh(roundedBox(.9,1,.9,.1,6),M.tofu); body.castShadow=true; tofu.add(body);
+const eyeG=new THREE.SphereGeometry(.065,10,8);
+const eyeL=new THREE.Mesh(eyeG,M.black),eyeR=new THREE.Mesh(eyeG,M.black);
+eyeL.position.set(-.17,.66,.455); eyeR.position.set(.17,.66,.455); eyeL.scale.z=eyeR.scale.z=.4; tofu.add(eyeL,eyeR);
+const mouth=new THREE.Mesh(new THREE.TorusGeometry(.085,.018,6,14,Math.PI),M.black); mouth.position.set(0,.45,.455); tofu.add(mouth);
+const cheekM=new THREE.MeshBasicMaterial({color:0xf2a7a0});
+const chL=new THREE.Mesh(new THREE.CircleGeometry(.06,12),cheekM),chR=chL.clone(); chL.position.set(-.29,.5,.457); chR.position.set(.29,.5,.457); tofu.add(chL,chR);
+const sweat=new THREE.Mesh(new THREE.SphereGeometry(.07,10,8),new THREE.MeshStandardMaterial({color:0x8fd0ff,roughness:.1,transparent:true,opacity:.85})); sweat.scale.y=1.4; sweat.position.set(.4,.85,.3); tofu.add(sweat);
+
+const P={};
+function resetPlayer(){Object.assign(P,{x:0,y:0,vx:0,vy:0,ground:true,coyote:0,jumps:0,mental:100,inv:0,sq:1,sqV:0,tilt:0,blink:2})}
+const H=()=>.38+.62*P.mental/100;
+
+/* ---------- particles ---------- */
+const crumbG=new THREE.BoxGeometry(.13,.13,.13); const crumbs=[];
+for(let i=0;i<90;i++){const m=new THREE.Mesh(crumbG,M.tofu);m.visible=false;scene.add(m);crumbs.push({m,vx:0,vy:0,vz:0,life:0})}
+function burst(x,y,n,spd=5){let k=0;for(const c of crumbs){if(c.life>0)continue;c.m.visible=true;c.m.position.set(x+(Math.random()-.5)*.6,y+(Math.random()-.5)*.5,(Math.random()-.5)*.6);c.vx=(Math.random()-.5)*spd;c.vy=Math.random()*spd;c.vz=(Math.random()-.5)*spd*.6;c.life=1+Math.random()*.6;const s=.5+Math.random();c.m.scale.set(s,s,s);if(++k>=n)break}}
+
+/* ---------- words ---------- */
+const WORDS=['まだ終わらないの？','前にも言ったよね','君のためを思って','普通できるでしょ','それ今やる？','で、結論は？','空気読んで','期待してたのに','若いんだから','責任感ないの？','自己責任','代わりはいるよ','気合いが足りない','言わなくても分かるよね'];
+const wordTex={};
+function getWordTex(t){
+  if(wordTex[t])return wordTex[t];
+  const c=document.createElement('canvas'),g=c.getContext('2d');const f='bold 46px "M PLUS 1 Code","Hiragino Sans",sans-serif';g.font=f;
+  const w=Math.ceil(g.measureText(t).width)+56,h=96;c.width=w;c.height=h;g.font=f;
+  g.fillStyle='#e5483c';const r=18;g.beginPath();g.moveTo(r,6);g.lineTo(w-r,6);g.quadraticCurveTo(w-4,6,w-4,r+6);g.lineTo(w-4,h-r-14);g.quadraticCurveTo(w-4,h-14,w-r,h-14);g.lineTo(44,h-14);g.lineTo(22,h-2);g.lineTo(28,h-14);g.lineTo(r,h-14);g.quadraticCurveTo(4,h-14,4,h-r-14);g.lineTo(4,r+6);g.quadraticCurveTo(4,6,r,6);g.fill();
+  g.fillStyle='#fff6f2';g.textBaseline='middle';g.fillText(t,28,(h-8)/2+2);
+  const tx=new THREE.CanvasTexture(c);tx.encoding=THREE.sRGBEncoding;return wordTex[t]={tx,a:w/h};
+}
+const projs=[];
+function spawnWord(){
+  const t=WORDS[(Math.random()*WORDS.length)|0],{tx,a}=getWordTex(t);
+  const s=new THREE.Sprite(new THREE.SpriteMaterial({map:tx,transparent:true}));
+  const hgt=.72; s.scale.set(hgt*a,hgt,1);
+  const y=.55+Math.random()*2.1; s.position.set(P.x+20,y+hgt/2,.3); scene.add(s);
+  projs.push({s,t,vx:-(5+Math.random()*3+P.x/GOAL*2.5),hw:hgt*a/2*.85,hh:hgt/2*.75,wob:Math.random()*6});
+}
+function clearWords(){for(const p of projs)scene.remove(p.s);projs.length=0}
+
+/* ---------- audio ---------- */
+let ac=null,soundOn=true;
+function sfx(k){
+  if(!ac||!soundOn)return;
+  try{
+    const t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);
+    const env=(v,d)=>{g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.start(t);o.stop(t+d+.02)};
+    if(k==='jump'){o.type='square';o.frequency.setValueAtTime(300,t);o.frequency.exponentialRampToValueAtTime(620,t+.11);env(.05,.14)}
+    else if(k==='hit'){o.type='sawtooth';o.frequency.setValueAtTime(170,t);o.frequency.exponentialRampToValueAtTime(45,t+.25);env(.12,.28)}
+    else if(k==='slam'){o.type='square';o.frequency.setValueAtTime(80,t);o.frequency.exponentialRampToValueAtTime(35,t+.18);env(.07,.2)}
+    else if(k==='pick'){o.type='triangle';o.frequency.setValueAtTime(660,t);o.frequency.setValueAtTime(990,t+.08);env(.09,.22)}
+    else if(k==='die'){o.type='sawtooth';o.frequency.setValueAtTime(320,t);o.frequency.exponentialRampToValueAtTime(40,t+.9);env(.1,.95)}
+    else if(k==='clear'){o.type='triangle';[523,659,784,1046].forEach((f,i)=>o.frequency.setValueAtTime(f,t+i*.12));env(.1,.6)}
+  }catch(e){}
+}
+let bgm=null,bgmFallback=false;
+function makeBgm(src){const a=new Audio();a.loop=true;a.preload='auto';a.volume=.55;a.src=src;a.muted=!soundOn;
+  a.addEventListener('error',()=>{if(bgmFallback)return;bgmFallback=true;
+    fetch('bgm.mp3').then(r=>r.blob()).then(b=>{const n=makeBgm(URL.createObjectURL(b));const was=!bgm.paused;bgm=n;if(was||state==='play')bgm.play().catch(()=>{})}).catch(()=>{})});
+  return a;}
+function bgmPlay(restart){
+  if(!bgm)bgm=makeBgm('bgm.mp3');
+  if(restart){try{bgm.currentTime=0}catch(e){}}
+  bgm.volume=.55; bgm.muted=!soundOn; bgm.play().catch(()=>{});
+}
+function bgmDuck(v){if(bgm)bgm.volume=v}
+$('#mute').addEventListener('click',e=>{soundOn=!soundOn;e.currentTarget.textContent=soundOn?'音 ON':'音 OFF';if(bgm)bgm.muted=!soundOn});
+
+/* ---------- UI ---------- */
+let toastT=0;
+function toast(t,cls){const el=$('#toast');el.textContent=t;el.className='toast on '+(cls||'');toastT=1.6}
+function flash(){const f=$('#flash');f.classList.add('on');requestAnimationFrame(()=>requestAnimationFrame(()=>f.classList.remove('on')))}
+const tierOf=m=>m>75?'木綿':m>50?'絹ごし':m>25?'おぼろ':m>0?'崩れかけ':'おから';
+let lastHud='';
+function hud(){
+  const m=Math.ceil(P.mental),prog=Math.max(0,Math.min(1,P.x/GOAL)),min=480+Math.floor(prog*540);
+  const tm=String(Math.floor(min/60)).padStart(2,'0')+':'+String(min%60).padStart(2,'0');
+  const el=Math.floor(playT),sub='経過 '+Math.floor(el/60)+':'+String(el%60).padStart(2,'0')+'　定時 17:00';
+  const key=m+tm+sub; if(key===lastHud)return; lastHud=key;
+  $('#mval').textContent=m; $('#tier').textContent=tierOf(m);
+  const f=$('#fill'); f.style.width=m+'%'; f.style.backgroundColor=m>50?'var(--tofu)':m>25?'var(--hazard)':'var(--alert)';
+  $('#time').textContent=tm; $('#sub').textContent=sub;
+}
+function getBest(){try{return parseFloat(localStorage.getItem('tofuBest'))||0}catch(e){return 0}}
+function setBest(v){try{localStorage.setItem('tofuBest',String(v))}catch(e){}}
+function showBest(){const b=getBest();$('#best').textContent=b?`自己ベスト ${b.toFixed(1)} 秒で退勤`:'横向きの画面がおすすめです'}
+showBest();
+
+/* ---------- input ---------- */
+const K={l:false,r:false};let jumpQ=0;
+const LK=['ArrowLeft','KeyA'],RK=['ArrowRight','KeyD'],JK=['Space','ArrowUp','KeyW'];
+addEventListener('keydown',e=>{
+  if(LK.includes(e.code))K.l=true; if(RK.includes(e.code))K.r=true;
+  if(JK.includes(e.code)){e.preventDefault();if(!e.repeat)jumpQ=.15}
+  if((e.code==='Enter'||e.code==='Space')&&state!=='play'&&!e.repeat&&deadT<=0){e.preventDefault();start()}
+});
+addEventListener('keyup',e=>{if(LK.includes(e.code))K.l=false;if(RK.includes(e.code))K.r=false});
+function hold(id,on,off){const b=$(id);
+  b.addEventListener('pointerdown',e=>{e.preventDefault();try{b.setPointerCapture(e.pointerId)}catch(_){}b.classList.add('on');on()});
+  const up=e=>{b.classList.remove('on');off&&off()};b.addEventListener('pointerup',up);b.addEventListener('pointercancel',up);b.addEventListener('lostpointercapture',up);
+  b.addEventListener('contextmenu',e=>e.preventDefault());}
+hold('#bl',()=>K.l=true,()=>K.l=false);
+hold('#br',()=>K.r=true,()=>K.r=false);
+hold('#bj',()=>jumpQ=.15);
+addEventListener('blur',()=>{K.l=K.r=false});
+
+/* ---------- game state ---------- */
+let state='title',gt=0,playT=0,wordT=3,deadT=0,shake=0,camX=0,camY=2;
+function start(){
+  if(!ac){try{ac=new (window.AudioContext||window.webkitAudioContext)()}catch(e){}}
+  if(ac&&ac.state==='suspended')ac.resume();
+  resetPlayer(); gt=0; playT=0; wordT=3; clearWords();
+  for(const p of pickups){p.taken=false;p.g.visible=true}
+  tofu.visible=true; camX=P.x+2.5; lastHud='';
+  $('#ovTitle').hidden=true; $('#ovEnd').hidden=true;
+  bgmPlay(true);
+  state='play'; toast('出勤しました。定時まで踏ん張ろう','');
+}
+$('#startBtn').addEventListener('click',start);
+$('#retryBtn').addEventListener('click',start);
+
+function hurt(n,label){
+  if(P.inv>0||state!=='play')return false;
+  P.mental=Math.max(0,P.mental-n); P.inv=1.3; shake=.45; flash(); sfx('hit');
+  toast(label+'　−'+n,'bad'); burst(P.x,P.y+H()/2,8,4);
+  if(P.mental<=0){die('崩壊','メンタルが崩れました','受け止められる量には限りがある。豆腐のせいではない。');}
+  return true;
+}
+function die(kicker,title,lead){
+  state='dead'; deadT=1.3; bgmDuck(.18); tofu.visible=false; sfx('die'); shake=.6;
+  burst(P.x,P.y+.3,60,7);
+  setTimeout(()=>endScreen(kicker,title,lead,false),1100);
+}
+function endScreen(kicker,title,lead,win){
+  $('#endKicker').textContent=kicker; $('#endTitle').textContent=title; $('#endLead').textContent=lead;
+  const prog=Math.max(0,Math.min(1,P.x/GOAL)),min=480+Math.floor(prog*540);
+  const tm=String(Math.floor(min/60)).padStart(2,'0')+':'+String(min%60).padStart(2,'0');
+  if(win){
+    const best=getBest(),nb=!best||playT<best; if(nb)setBest(playT);
+    $('#endResult').innerHTML=`所要 <b>${playT.toFixed(1)} 秒</b>${nb?'（自己ベスト）':''}<br>残りメンタル <b>${Math.ceil(P.mental)}</b>（${tierOf(P.mental)}）`;
+    $('#retryBtn').textContent='翌日も出勤';
+  }else{
+    $('#endResult').innerHTML=`力尽きた時刻 <b>${tm}</b>　進捗 <b>${Math.floor(prog*100)}%</b>`;
+    $('#retryBtn').textContent='もう一度出勤';
+  }
+  $('#ovEnd').hidden=false; deadT=0; showBest();
+}
+function win(){
+  state='clear'; sfx('clear'); bgmDuck(.35); toast('定時退社！','good');
+  const m=P.mental;
+  const title=m>=80?'木綿のまま退勤':m>=50?'絹ごしで帰宅':m>=25?'おぼろげに退勤':'形を保って帰宅';
+  setTimeout(()=>endScreen('17:00 定時',title,'今日も一日、崩れずにやり過ごした。明日のことは明日の豆腐が考える。',true),900);
+}
+
+/* ---------- press timing ---------- */
+const TOP=4.6,BOT=.1;
+function pressY(p){
+  const u=((gt/p.period)+p.phase)%1;
+  let y,mode;
+  if(u<.5){y=TOP;mode='up'}
+  else if(u<.62){y=TOP+Math.sin((u-.5)/.12*Math.PI)*.4;mode='warn'}
+  else if(u<.68){const k=(u-.62)/.06;y=TOP+(BOT-TOP)*k*k;mode='slam'}
+  else if(u<.84){y=BOT;mode='down'}
+  else{y=BOT+(TOP-BOT)*((u-.84)/.16);mode='rise'}
+  return{y,mode,u};
+}
+
+/* ---------- update ---------- */
+function update(dt){
+  playT+=dt;
+  const h=H(), hw=.45;
+  const dir=(K.r?1:0)-(K.l?1:0);
+  let conv=0; if(P.ground&&P.onSeg&&P.onSeg.conv)conv=P.onSeg.conv;
+  const target=dir*SPEED+conv;
+  P.vx+=(target-P.vx)*Math.min(1,dt*(P.ground?14:7));
+  if(dir)P.tilt+=(dir*.35-P.tilt)*Math.min(1,dt*10); else P.tilt*=1-Math.min(1,dt*6);
+  // jump
+  P.coyote=P.ground?.1:Math.max(0,P.coyote-dt);
+  if(jumpQ>0){
+    if(P.ground||P.coyote>0){P.vy=JV;P.jumps=1;P.ground=false;P.coyote=0;jumpQ=0;P.sq=1.25;sfx('jump')}
+    else if(P.jumps<2){P.vy=JV*.85;P.jumps=2;jumpQ=0;P.sq=1.2;sfx('jump');burst(P.x,P.y,4,2)}
+  }
+  jumpQ=Math.max(0,jumpQ-dt);
+  P.vy-=G*dt; if(P.vy<-26)P.vy=-26;
+  // horizontal
+  const px=P.x; P.x+=P.vx*dt; if(P.x<-13)P.x=-13;
+  for(const s of segs){ if(P.y<s.top-.05&&P.x+hw>s.x0&&P.x-hw<s.x1){ P.x=px<(s.x0+s.x1)/2?s.x0-hw:s.x1+hw; P.vx=0; } }
+  // presses
+  for(const p of presses){
+    const {y,mode}=pressY(p);
+    if(Math.abs(P.x-p.x)<1+hw && y<P.y+h-.02 && y+.7>P.y){
+      if(mode==='slam'&&P.inv<=0){
+        P.sq=.3; hurt(25,'プレスされた');
+        P.x=P.x<p.x?p.x-1-hw-.05:p.x+1+hw+.05; P.vy=5; P.vx=(P.x<p.x?-1:1)*4;
+      }else{ P.x=px<p.x?p.x-1-hw:p.x+1+hw; P.vx=0; }
+    }
+  }
+  // vertical
+  const py=P.y; P.y+=P.vy*dt; const wasG=P.ground; P.ground=false; P.onSeg=null;
+  if(P.vy<=0){
+    for(const s of segs.concat(plats)){
+      if(P.x+hw>s.x0&&P.x-hw<s.x1&&py>=s.top-.02&&P.y<=s.top){P.y=s.top;P.vy=0;P.ground=true;P.jumps=0;P.onSeg=s.conv!==undefined?s:null;break}
+    }
+  }
+  if(P.ground&&!wasG&&py-P.y>=0){P.sq=Math.min(P.sq,.72)}
+  if(P.y<-1.3){die('転落','すり潰されて おから','石臼は待ってくれない。足元の確認もまた仕事のうち。');return}
+  // pickups
+  const cy=P.y+h/2;
+  for(const k of pickups){
+    if(k.taken)continue;
+    if(Math.abs(k.x-P.x)<.8&&Math.abs(k.g.position.y-cy)<.9){
+      k.taken=true;k.g.visible=false;const d=PK[k.kind];P.mental=Math.min(100,P.mental+d.v);sfx('pick');toast(d.label+'　＋'+d.v,'good');P.sq=1.2;
+    }
+  }
+  // words
+  wordT-=dt;
+  if(wordT<=0&&P.x>26&&P.x<GOAL-12){spawnWord();const prog=P.x/GOAL;wordT=2.9-prog*1.4+Math.random()*1.4}
+  for(let i=projs.length-1;i>=0;i--){
+    const p=projs[i];p.s.position.x+=p.vx*dt;p.wob+=dt*5;p.s.position.y+=Math.sin(p.wob)*dt*.4;
+    const sx=p.s.position.x,sy=p.s.position.y;
+    if(Math.abs(sx-P.x)<p.hw+hw*.8&&sy+p.hh>P.y&&sy-p.hh<P.y+h){
+      if(hurt(12,'「'+p.t+'」')){P.sq=.6;scene.remove(p.s);projs.splice(i,1);continue}
+    }
+    if(sx<P.x-22){scene.remove(p.s);projs.splice(i,1)}
+  }
+  P.inv=Math.max(0,P.inv-dt);
+  if(P.x>=GOAL)win();
+}
+
+/* ---------- world animation ---------- */
+const clk=new THREE.Clock();
+function frame(){
+  requestAnimationFrame(frame);
+  const dt=Math.min(clk.getDelta(),1/30);
+  if(state==='play'||state==='title')gt+=dt;
+  if(state==='play')update(dt);
+  // presses
+  for(const p of presses){
+    const {y,mode,u}=pressY(p);
+    p.head.position.y=y;
+    const len=6.1-(y+.7); p.rod.scale.y=Math.max(.05,len); p.rod.position.y=y+.7+len/2;
+    p.warn.material.opacity=mode==='warn'?.25+.25*Math.sin(gt*30):mode==='slam'?.55:0;
+    if(p.lastU<.68&&u>=.68&&Math.abs(p.x-P.x)<12&&state==='play'){sfx('slam');if(Math.abs(p.x-P.x)<5)shake=Math.max(shake,.15)}
+    p.lastU=u;
+  }
+  for(const g of grinders){g.a.rotation.y+=dt*1.6;g.b.rotation.y-=dt*1.3}
+  for(const s of belts)s.tex.offset.x-=s.conv*dt/2;
+  for(const k of pickups){if(!k.taken){k.g.position.y=k.y+Math.sin(gt*3+k.x)*.12;k.g.rotation.y+=dt*1.8}}
+  for(const l of lamps){l.m.visible=Math.sin(gt*2+l.ph)>-.6}
+  for(const c of crumbs){if(c.life<=0)continue;c.life-=dt;c.vy-=20*dt;c.m.position.x+=c.vx*dt;c.m.position.y+=c.vy*dt;c.m.position.z+=c.vz*dt;c.m.rotation.x+=dt*5;if(c.m.position.y<-4||c.life<=0){c.life=0;c.m.visible=false}}
+  // tofu visuals
+  if(state!=='dead'){
+    const h=H();
+    P.sqV+=(1-P.sq)*180*dt; P.sqV*=Math.pow(.0009,dt); P.sq+=P.sqV*dt;
+    const jig=P.mental<35?Math.sin(gt*40)*.015:0;
+    const sy=h*P.sq, sxz=(1+(1-h)*.5)/Math.sqrt(Math.max(.4,P.sq));
+    tofu.position.set(P.x,P.y,0); tofu.scale.set(sxz+jig,sy,sxz); tofu.rotation.y=P.tilt; tofu.rotation.z=-P.vx*.012;
+    tofu.visible=state==='title'||P.inv<=0||Math.floor(P.inv*14)%2===0;
+    P.blink-=dt; const bl=P.blink<.12?.15:1; if(P.blink<0)P.blink=2+Math.random()*3;
+    const sad=P.mental<=50; eyeL.scale.y=eyeR.scale.y=bl*(1/Math.max(.4,sy))*.9*(sad?.8:1);
+    mouth.rotation.z=sad?0:Math.PI; mouth.position.y=sad?.4:.47;
+    chL.visible=chR.visible=P.mental>75; sweat.visible=P.mental<=35; sweat.position.y=.85+Math.sin(gt*6)*.04;
+  }
+  // camera
+  const tx=P.x+2.5, ty=Math.max(2,P.y*.6+2);
+  camX+=(tx-camX)*Math.min(1,dt*4); camY+=(ty-camY)*Math.min(1,dt*3);
+  shake=Math.max(0,shake-dt); const sk=shake*shake*1.2;
+  camera.position.set(camX+(Math.random()-.5)*sk,camY+2.4+(Math.random()-.5)*sk,camDist);
+  camera.lookAt(camX,camY,0);
+  sun.position.set(camX+6,15,10); sun.target.position.set(camX,0,0); amb.position.set(camX,4,4);
+  if(toastT>0){toastT-=dt;if(toastT<=0)$('#toast').classList.remove('on')}
+  if(state==='play')hud();
+  renderer.render(scene,camera);
+}
+resetPlayer(); hud(); frame();
+})();
+</script>
+</body>
+</html>
