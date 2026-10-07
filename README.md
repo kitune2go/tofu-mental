@@ -6,7 +6,7 @@
 ## 遊び方
 
 `index.html` をブラウザで開くだけで動きます（Three.js は CDN から読み込み）。
-GitHub Pages を有効にすれば URL で遊べます。
+公開先：https://tofu-mental-game.vercel.app/
 
 | 操作 | キーボード | スマホ |
 | --- | --- | --- |
