@@ -128,8 +128,8 @@ h1 .st{display:block;font-family:var(--f-display);font-size:clamp(18px,5vw,26px)
     <div class="keys">
       <b>← → / A D</b><span>移動</span>
       <b>↑ / W / Space</b><span>ジャンプ（空中でもう一回）</span>
-      <b>J / Z</b><span>体当たり。技の後のスキに当てると効く</span>
-      <b>頭を踏む</b><span>大ダメージ。構え中の技も止められる</span>
+      <b>J / Z</b><span>体当たり。構えていない板前には受け流される。技を振った後のスキを狙え（1回のスキに2発まで）</span>
+      <b>頭を踏む</b><span>大ダメージ。構え中の技も止められる。続けては踏めない</span>
       <b>K / X（長押し）</b><span>高野豆腐ガード。ゲージが尽きると崩れる</span>
       <b>横一文字</b><span>低い斬撃。ジャンプでかわせる</span>
       <b>縦割り</b><span>踏み込んで振り下ろす。下がるかガード</span>
@@ -502,11 +502,12 @@ const ATK={
   tate:{wind:.74,act:.26,rec:.88,dmg:22,say:['縦割り！','真っ二つだ！'],lunge:2.2},
   nage:{wind:.52,act:.16,rec:.55,dmg:12,say:['受け取れ！','飛ぶぞ！']},
   sen:{wind:.17,act:.1,rec:.95,dmg:7,chain:4,say:['千切りだ！']},
+  kaeshi:{wind:.3,act:.16,rec:.55,dmg:16,say:['返し刀！','甘い！']},
 };
 const TAUNT=['活きがいいな','サイの目にしてやる','冷奴か、湯豆腐か','包丁は研いできた','まな板の上だぞ'];
 function reset(){
   Object.assign(P,{x:-4,y:0,vx:0,vy:0,ground:true,jumps:0,hp:100,gm:100,gBroken:false,guard:false,atk:0,atkCd:0,hitDone:false,stun:0,inv:0,face:1,sq:1,sqV:0,blink:2,diced:false});
-  Object.assign(E,{x:4,hp:100,state:'idle',t:0,idleT:1,face:-1,atkName:null,hitDone:false,chainLeft:0,kb:0,flash:0,phase:1,spd:2.1,tauntT:4,downT:0});
+  Object.assign(E,{x:4,hp:100,state:'idle',t:0,idleT:1,face:-1,atkName:null,hitDone:false,chainLeft:0,kb:0,flash:0,phase:1,spd:2.1,tauntT:4,downT:0,blockN:0,blockT:0,headT:0,recHits:0,closeT:0});
   for(const k of knives){scene.remove(k.m);if(k.ring)scene.remove(k.ring)}knives.length=0;
   for(const d of dice){d.m.visible=false}
   for(const c of cuts)c.visible=false;
@@ -560,7 +561,7 @@ function updPlayer(dt){
     else if(P.jumps<2){P.vy=JV*.85;P.jumps=2;jumpQ=0;sfx('jump')}
   }
   jumpQ=Math.max(0,jumpQ-dt);
-  if(atkQ>0&&canAct&&!P.guard&&P.atkCd<=0){P.atk=.22;P.atkCd=.42;P.hitDone=false;atkQ=0;sfx('dash');P.sq=.8}
+  if(atkQ>0&&canAct&&!P.guard&&P.atkCd<=0){P.atk=.22;P.atkCd=.5;P.hitDone=false;atkQ=0;sfx('dash');P.sq=.8}
   atkQ=Math.max(0,atkQ-dt);
   const py=P.y;
   P.vy-=G*dt; P.x+=P.vx*dt; P.y+=P.vy*dt;
@@ -568,22 +569,40 @@ function updPlayer(dt){
   P.x=clamp(P.x,-ARENA,ARENA);
   if(E.state==='down'||state!=='fight')return;
   // stomp on the head
-  if(P.vy<0&&py>=2.55&&P.y<3.0&&Math.abs(P.x-E.x)<.95){hitEnemy(10,true);P.vy=10.5;P.jumps=1;P.y=3.0;P.sq=.6;tofuSay('踏んだ！');return}
+  if(P.vy<0&&py>=2.55&&P.y<3.0&&Math.abs(P.x-E.x)<.95){
+    if(E.headT>0){P.vy=8;P.vx=-P.face*7;P.jumps=1;P.y=3.0;sfx('guard');say('二度は踏ません');return}
+    hitEnemy(10,'stomp');E.headT=1.8;P.vy=10.5;P.jumps=1;P.y=3.0;P.sq=.6;tofuSay('踏んだ！');return}
   // body push
   const minD=1.1, dx=P.x-E.x;
   if(P.y<2.5&&Math.abs(dx)<minD){const s=dx>=0?1:-1;P.x=E.x+s*minD;if(Math.abs(P.x)>ARENA){P.x=clamp(P.x,-ARENA,ARENA);E.x=P.x-s*minD}}
   // tackle
-  if(P.atk>0&&!P.hitDone&&Math.abs(P.x-E.x)<minD+.15&&P.y<2.4){P.hitDone=true;hitEnemy(E.state==='rec'?9:6,false);P.vx=-P.face*5;P.atk=0}
+  if(P.atk>0&&!P.hitDone&&Math.abs(P.x-E.x)<minD+.15&&P.y<2.4){P.hitDone=true;P.atk=0;tackleHit()}
 }
 
 /* ---------- enemy ---------- */
-function hitEnemy(n,interrupt){
+const BLOCK_SAY=['甘い','見えてるぞ','受け流し','軽いな'];
+function tackleHit(){
+  if(E.state==='rec'&&E.recHits<2){E.recHits++;E.t=Math.max(0,E.t-.08);hitEnemy(9,'punish');P.vx=-P.face*5;return}
+  if(E.state==='wind'||E.state==='act'){sfx('guard');burst(E.x-E.face*.5,1.2,4,4,sparkMat);P.vx=-P.face*7;P.vy=3;P.ground=false;P.stun=.25;combo=0;if(Math.random()<.4)say('効かん');return}
+  // not in a punish window: the itamae parries with the flat of the blade
+  sfx('guard'); burst(E.x-E.face*.5,1.2,5,4,sparkMat);
+  P.vx=-P.face*8; P.vy=3.5; P.ground=false; P.stun=.3; combo=0;
+  E.blockN++; E.blockT=2.2; E.flash=.06;
+  if(E.blockN>=2){E.blockN=0;startAtk('kaeshi')}
+  else if(Math.random()<.6)say(BLOCK_SAY[(Math.random()*BLOCK_SAY.length)|0]);
+}
+function startAtk(name){
+  E.atkName=name; E.state='wind'; E.t=0; E.hitDone=false; E.face=P.x>E.x?1:-1; E.recHits=0;
+  const A=ATK[name]; E.chainLeft=A.chain||0; say(A.say[(Math.random()*A.say.length)|0]); sfx('warn');
+}
+function hitEnemy(n,kind){
+  const interrupt=kind==='stomp'||kind===true;
   E.hp=Math.max(0,E.hp-n); E.flash=.12; combo++; comboT=1.6; maxCombo=Math.max(maxCombo,combo);
   sfx(interrupt?'stomp':'hit'); burst(E.x-E.face*.3,interrupt?2.9:1.4,6,5,sparkMat); shake=Math.max(shake,interrupt?.3:.15);
   if(combo>=2){const c=$('#combo');c.textContent=combo+' HIT';c.classList.add('on')}
   if(E.hp<=0){ko(true);return}
-  const armored=(E.state==='wind'||E.state==='act')&&!interrupt;
-  if(!armored){E.state='hurt';E.t=0;E.kb=(E.x>P.x?1:-1)*5;it.knife.visible=true}
+  if(interrupt){E.state='hurt';E.t=0;E.kb=(E.x>P.x?1:-1)*5;it.knife.visible=true;if(it.robKnife)it.robKnife.visible=true}
+  else E.kb=(E.x>P.x?1:-1)*1.5;
   if(E.phase===1&&E.hp<=50)phase2();
 }
 function phase2(){E.phase=2;E.spd=3;it.hb.emissive.setHex(0xc8372d);say('本気出すぞ');banner('本気',true,.9);rainT=3.5;sfx('gong')}
@@ -593,14 +612,13 @@ function chooseAttack(){
   if(d>4.2){if(Math.random()<.6)name='nage';else{E.idleT=E.t+.5;return}}
   else if(d>2.9)name=Math.random()<.7?'tate':'nage';
   else{const r=Math.random();name=E.phase===2&&r<.28?'sen':r<.62?'yoko':'tate'}
-  E.atkName=name; E.state='wind'; E.t=0; E.hitDone=false; E.face=P.x>E.x?1:-1;
-  const A=ATK[name]; E.chainLeft=A.chain||0; say(A.say[(Math.random()*A.say.length)|0]); sfx('warn');
+  startAtk(name);
 }
 function atkTime(k){const A=ATK[E.atkName];return A[k]*(E.phase===2?.85:1)}
 function hitbox(){
   const f=E.face,n=E.atkName;
   if(n==='yoko')return[E.x+f*.3,E.x+f*3.0,0,1.15];
-  if(n==='sen')return[E.x+f*.3,E.x+f*2.7,0,1.6];
+  if(n==='sen'||n==='kaeshi')return[E.x+f*.3,E.x+f*2.8,0,1.7];
   if(n==='tate')return[E.x+f*.5,E.x+f*1.95,0,3.3];
   return null;
 }
@@ -622,7 +640,8 @@ function rain(){
 }
 function updEnemy(dt){
   if(E.state==='down')return;
-  E.t+=dt; E.flash-=dt;
+  E.t+=dt; E.flash-=dt; E.headT=Math.max(0,E.headT-dt);
+  E.blockT-=dt; if(E.blockT<=0)E.blockN=0;
   E.x+=E.kb*dt; E.kb*=1-Math.min(1,dt*6); E.x=clamp(E.x,-ARENA,ARENA);
   const d=Math.abs(P.x-E.x);
   E.moving=0; E.tauntAnim=Math.max(0,(E.tauntAnim||0)-dt);
@@ -631,7 +650,9 @@ function updEnemy(dt){
     if(d>2.3){E.x+=E.face*E.spd*dt;E.moving=1}
     else if(d<1.6){E.x-=E.face*E.spd*.6*dt;E.moving=-1}
     E.tauntT-=dt; if(E.tauntT<=0){say(TAUNT[(Math.random()*TAUNT.length)|0]);E.tauntT=7+Math.random()*4;E.tauntAnim=1.6;E.tauntClip=Math.random()<.5?'No':'Wave'}
-    if(E.t>=E.idleT)chooseAttack();
+    E.closeT=d<1.45?E.closeT+dt:0;
+    if(E.closeT>1.1){E.closeT=0;startAtk('kaeshi')}
+    else if(E.t>=E.idleT)chooseAttack();
   }else if(E.state==='wind'){
     if(E.t>=atkTime('wind')){E.state='act';E.t=0;E.hitDone=false;
       if(E.atkName==='nage'){throwKnives();it.knife.visible=false;if(it.robKnife)it.robKnife.visible=false;sfx('swing')}
@@ -642,7 +663,7 @@ function updEnemy(dt){
     const hb=hitbox();
     if(hb&&!E.hitDone){
       const x0=Math.min(hb[0],hb[1]),x1=Math.max(hb[0],hb[1]);
-      if(P.x+.42>x0&&P.x-.42<x1&&P.y<hb[3]&&P.y+H()>hb[2]){E.hitDone=true;const nm={yoko:'横一文字',tate:'縦割り',sen:'千切り'}[E.atkName];hurtPlayer(A.dmg,nm,E.face)}
+      if(P.x+.42>x0&&P.x-.42<x1&&P.y<hb[3]&&P.y+H()>hb[2]){E.hitDone=true;const nm={yoko:'横一文字',tate:'縦割り',sen:'千切り',kaeshi:'返し刀'}[E.atkName];hurtPlayer(A.dmg,nm,E.face)}
     }
     if(E.t>=atkTime('act')){
       if(E.chainLeft>0){E.chainLeft--;E.state='wind';E.t=0;E.hitDone=false}
@@ -842,7 +863,7 @@ function frame(){
 }
 reset(); frame();
 loadChars().then(()=>{const b=$('#startBtn');b.disabled=false;b.textContent='まな板に上がる'});
-if(location.hash==='#dbg')window.__dbg={P,E,it,start,get state(){return state},set state(v){state=v},spawnMinion,minions,hitEnemy,acts:()=>acts,chooseAttack,ATK,setAtk:(n)=>{E.atkName=n;E.state='wind';E.t=0;E.hitDone=false;E.chainLeft=ATK[n].chain||0}};
+if(location.hash==='#dbg')window.__dbg={P,E,it,start,get state(){return state},set state(v){state=v},spawnMinion,minions,hitEnemy,acts:()=>acts,chooseAttack,ATK,sim:(sec,mash,smart)=>{const dt=1/30;for(let i=0;i<sec*30&&state==='fight';i++){if(smart){const d=Math.abs(P.x-E.x),tw=E.x>P.x?1:-1;K.g=E.state==='wind'||E.state==='act';const go=E.state==='rec'?1:(d<2.6?-1:d>3.4?1:0);K.r=go*tw>0;K.l=go*tw<0;if(E.state==='rec'&&d<1.5&&i%3===0)atkQ=.15;}else{K.r=P.x<E.x-1.2;K.l=P.x>E.x+1.2;if(mash&&i%4===0)atkQ=.15;}fightT+=dt;timeLeft=Math.max(0,ROUND_T-fightT);updPlayer(dt);updEnemy(dt);updKnives(dt);updNegi(dt);updMinions(dt)}K.r=K.l=K.g=false;return{php:Math.ceil(P.hp),ehp:Math.ceil(E.hp),state,t:Math.round(fightT)}},setAtk:(n)=>{E.atkName=n;E.state='wind';E.t=0;E.hitDone=false;E.chainLeft=ATK[n].chain||0}};
 })();
 </script>
 </body>
