@@ -1,0 +1,625 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="凍れば鈍器、解ければスポンジ。メンタルは成長しないまま、物性だけが変わる北極ステージ。">
+<meta property="og:type" content="website">
+<meta property="og:title" content="すり潰されて豆腐メンタル EX4 北極">
+<meta property="og:description" content="物性は変わる。メンタルは変わらない。">
+<meta property="og:url" content="https://tofu-mental-seven.vercel.app/arctic.html">
+<meta property="og:image" content="https://tofu-mental-seven.vercel.app/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://tofu-mental-seven.vercel.app/og.png">
+<title>すり潰されて豆腐メンタル EX4</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=M+PLUS+1+Code:wght@400;700&display=swap">
+<style>
+/* Layout: stage-1 shell with a second gauge (freeze) and a state chip. Polar-night palette: deep navy, ice cyan, aurora green, campfire orange. */
+html{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+:root{
+  --night:#0a1424; --panel:rgba(10,20,36,.8); --line:#2c4466;
+  --tofu:#f6f3ea; --ice:#9fe0ff; --aurora:#6fffb0; --fire:#ff9a3c; --sponge:#d8c08a; --alert:#e5483c; --hazard:#f0b92b; --negi:#5fae4e;
+  --ink:#eaf2fb; --muted:#93a8c4;
+  --f-display:"Dela Gothic One","Hiragino Sans","Yu Gothic","Meiryo",sans-serif;
+  --f-ui:"M PLUS 1 Code","Hiragino Sans","Yu Gothic","Meiryo",monospace;
+  color-scheme:dark;
+}
+html,body{height:100%;margin:0;overflow:hidden;background:var(--night);color:var(--ink);font-family:var(--f-ui);-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+#c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+.hud{position:fixed;left:0;right:0;top:0;padding:calc(env(safe-area-inset-top,0px) + 10px) 16px 0;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;pointer-events:none;z-index:5}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:8px 12px}
+.left{min-width:0;flex:0 1 280px}
+.lbl{font-size:11px;letter-spacing:.12em;color:var(--muted);display:flex;justify-content:space-between;gap:8px}
+.lbl b{color:var(--ink);font-weight:700;letter-spacing:.04em}
+.bar{margin-top:5px;height:11px;background:#050a14;border-radius:3px;overflow:hidden;border:1px solid var(--line);position:relative}
+.fill{height:100%;width:100%;background:var(--tofu);transition:width .2s ease,background-color .2s}
+.frz .fill{background:linear-gradient(90deg,#4fa8ff,#bfeaff);width:0}
+.tick{position:absolute;top:0;bottom:0;width:2px;background:rgba(255,255,255,.65)}
+.tick.t60{left:60%}.tick.t35{left:35%;background:rgba(255,154,60,.8)}
+.row2{margin-top:8px}
+.chip{display:inline-block;margin-top:7px;font-size:12px;font-weight:700;padding:2px 9px;border-radius:999px;border:1px solid var(--line);background:#0d1b30;color:var(--tofu)}
+.chip.frozen{color:#0a1424;background:var(--ice);border-color:var(--ice)}
+.chip.sponge{color:#1a1206;background:var(--sponge);border-color:var(--sponge)}
+.same{font-size:10px;color:var(--muted);margin-left:6px}
+.dist{text-align:right}
+.m{font-family:var(--f-display);font-size:26px;line-height:1;font-variant-numeric:tabular-nums;color:var(--ice)}
+.sub{font-size:11px;color:var(--muted);margin-top:4px;letter-spacing:.06em;font-variant-numeric:tabular-nums}
+.mute{pointer-events:auto;margin-top:6px;font:inherit;font-size:11px;color:var(--muted);background:transparent;border:1px solid var(--line);border-radius:4px;padding:3px 8px;cursor:pointer}
+.toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 116px);transform:translateX(-50%);font-weight:700;font-size:15px;color:var(--tofu);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:6px 14px;white-space:nowrap;opacity:0;transition:opacity .2s;pointer-events:none;z-index:6;max-width:calc(100% - 32px);overflow:hidden;text-overflow:ellipsis}
+.toast.on{opacity:1}
+.toast.bad{color:#ffb3ab;border-color:var(--alert)}
+.toast.good{color:#cfeec5;border-color:var(--negi)}
+.toast.ice{color:#0a1424;background:var(--ice);border-color:var(--ice)}
+.toast.sp{color:#1a1206;background:var(--sponge);border-color:var(--sponge)}
+.flash{position:fixed;inset:0;pointer-events:none;box-shadow:inset 0 0 0 0 rgba(229,72,60,0);transition:box-shadow .35s;z-index:4}
+.flash.on{box-shadow:inset 0 0 90px 30px rgba(229,72,60,.55);transition:none}
+.frost{position:fixed;inset:0;pointer-events:none;z-index:3;opacity:0;background:radial-gradient(ellipse at center,rgba(160,220,255,0) 45%,rgba(190,235,255,.75) 100%);transition:opacity .3s}
+.overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(6,12,24,.84);z-index:10}
+.card{max-width:540px;width:100%;text-align:center}
+.kicker{font-size:13px;letter-spacing:.3em;color:var(--muted)}
+h1{font-family:var(--f-display);font-weight:400;margin:10px 0 0;line-height:1.05;text-wrap:balance}
+h1 .s{display:block;font-size:clamp(18px,4.6vw,24px)}
+h1 .b{display:block;font-size:clamp(50px,15vw,92px);color:var(--ice)}
+h1 .st{display:block;font-size:clamp(18px,5vw,26px);color:var(--aurora);margin-top:6px}
+.stripe{height:12px;margin:14px auto 18px;max-width:340px;background:repeating-linear-gradient(-45deg,var(--ice) 0 14px,#0a1424 14px 28px);border-radius:2px}
+.lead{font-size:15px;line-height:1.7;margin:0 auto;max-width:34em}
+.flow{font-family:var(--f-display);font-size:clamp(13px,3.6vw,17px);color:var(--ink);margin:14px auto 0;letter-spacing:.04em}
+.flow i{font-style:normal;color:var(--muted);margin:0 .3em}
+.keys{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;text-align:left;font-size:13px;color:var(--muted);max-width:400px;margin:14px auto 0}
+.keys b{color:var(--ink)}
+.btns{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:20px}
+.btn{font-family:var(--f-display);font-size:20px;color:#06121f;background:var(--ice);border:0;border-radius:6px;padding:12px 34px;cursor:pointer;box-shadow:0 4px 0 #3f7fa8}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 #3f7fa8}
+.ghost{display:inline-block;font-family:var(--f-display);font-size:16px;color:var(--ink);background:transparent;border:2px solid var(--ink);border-radius:6px;padding:10px 20px;text-decoration:none;cursor:pointer}
+.btn:focus-visible,.ghost:focus-visible,.mute:focus-visible{outline:2px solid var(--hazard);outline-offset:2px}
+.result{font-size:15px;line-height:1.9;margin-top:6px;font-variant-numeric:tabular-nums}
+.result b{color:var(--hazard)}
+.note{font-size:12px;color:var(--muted);margin-top:12px}
+.pad{position:fixed;left:0;right:0;bottom:0;padding:0 16px calc(env(safe-area-inset-bottom,0px) + 16px);display:none;justify-content:space-between;align-items:flex-end;z-index:6;pointer-events:none}
+.pad .grp{display:flex;gap:12px}
+.pb{pointer-events:auto;touch-action:none;width:68px;height:68px;border-radius:50%;border:2px solid rgba(234,242,251,.35);background:rgba(10,20,36,.55);color:var(--ink);font:700 22px var(--f-ui);display:flex;align-items:center;justify-content:center}
+.pb.jump{width:84px;height:84px;font-size:15px;border-color:rgba(159,224,255,.75);color:var(--ice)}
+.pb.on{background:rgba(159,224,255,.3)}
+@media (pointer:coarse){.pad{display:flex}}
+@media (prefers-reduced-motion:reduce){.fill,.toast,.frost{transition:none}}
+</style>
+</head>
+<body>
+<canvas id="c" aria-label="ゲーム画面"></canvas>
+<div class="frost" id="frost"></div>
+<div class="flash" id="flash"></div>
+
+<div class="hud">
+  <div class="box left">
+    <div class="lbl"><span>メンタル</span><span><b id="mval">100</b><span class="same">成長なし</span></span></div>
+    <div class="bar"><div class="fill" id="fill"></div></div>
+    <div class="lbl row2"><span>凍結度</span><span><b id="fval">0</b>%</span></div>
+    <div class="bar frz"><div class="fill" id="ffill"></div><i class="tick t35"></i><i class="tick t60"></i></div>
+    <span class="chip" id="chip">物性：生</span>
+  </div>
+  <div class="box dist">
+    <div class="m" id="m">232 m</div>
+    <div class="sub" id="sub">北極点まで</div>
+    <button class="mute" id="mute" type="button">音 ON</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<div class="pad">
+  <div class="grp">
+    <button class="pb" id="bl" type="button" aria-label="左">◀</button>
+    <button class="pb" id="br" type="button" aria-label="右">▶</button>
+  </div>
+  <button class="pb jump" id="bj" type="button">ジャンプ</button>
+</div>
+
+<div class="overlay" id="ovTitle">
+  <div class="card">
+    <div class="kicker">EX4　北極ステージ</div>
+    <h1><span class="s">すり潰されて豆腐メンタル</span><span class="b">北極</span><span class="st">物性は変わる。メンタルは変わらない。</span></h1>
+    <div class="stripe"></div>
+    <p class="lead">寒さで豆腐が凍っていく。凍れば鈍器、解ければスポンジ。<br>北極点まで、状態を使い分けて進め。</p>
+    <div class="flow">生<i>→</i>凍結（鈍器）<i>→</i>解凍<i>→</i>スポンジ</div>
+    <div class="keys">
+      <b>凍結（60%〜）</b><span>重くて遅い。氷の壁を割れる。クマも言葉も跳ね返す</span>
+      <b>スポンジ</b><span>一度解けたら二度と生に戻らない。軽くてよく跳ぶ</span>
+      <b>薄氷</b><span>凍った重い豆腐が乗ると割れる</span>
+      <b>焚き火・カイロ</b><span>解凍する。保冷剤は凍結を進める</span>
+      <b>凍結100%</b><span>冷凍保存されて終わり</span>
+    </div>
+    <div class="btns">
+      <button class="btn" id="startBtn" type="button">上陸する</button>
+      <a class="ghost" href="./">1面へ</a>
+    </div>
+    <div class="note" id="best"></div>
+  </div>
+</div>
+
+<div class="overlay" id="ovEnd" hidden>
+  <div class="card">
+    <div class="kicker" id="endKicker"></div>
+    <h1><span class="b" id="endTitle" style="font-size:clamp(30px,8.5vw,52px)"></span></h1>
+    <div class="stripe"></div>
+    <p class="lead" id="endLead"></p>
+    <div class="result" id="endResult"></div>
+    <div class="btns">
+      <button class="btn" id="retryBtn" type="button">もう一度上陸</button>
+      <a class="ghost" id="shareBtn" href="#" target="_blank" rel="noopener">Xでシェア</a>
+      <a class="ghost" href="./">1面へ</a>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(()=>{
+const $=s=>document.querySelector(s);
+const SITE='https://tofu-mental-seven.vercel.app/arctic.html';
+const GOAL=232;
+const FREEZE_AT=60, THAW_AT=35;
+const PHYS={
+  soft:  {spd:6.2,jv:11.2,g:32,dbl:true, acc:14,label:'物性：生',cls:''},
+  frozen:{spd:4.6,jv:8.8, g:38,dbl:false,acc:3.2,label:'物性：凍結（鈍器）',cls:'frozen'},
+  sponge:{spd:6.0,jv:13.4,g:24,dbl:true, acc:12,label:'物性：スポンジ',cls:'sponge'},
+};
+
+/* ---------- renderer ---------- */
+const canvas=$('#c');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+renderer.setPixelRatio(Math.min(2,window.devicePixelRatio||1));
+renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.outputEncoding=THREE.sRGBEncoding;
+const scene=new THREE.Scene();
+function ctex(w,h,draw,rep){const c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d');draw(g,w,h);const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;t.anisotropy=4;if(rep){t.wrapS=t.wrapT=THREE.RepeatWrapping}return t}
+scene.background=ctex(4,256,(g,w,h)=>{const gr=g.createLinearGradient(0,0,0,h);gr.addColorStop(0,'#040914');gr.addColorStop(.5,'#0d2140');gr.addColorStop(1,'#2a4f78');g.fillStyle=gr;g.fillRect(0,0,w,h)});
+const FOG=new THREE.Color(0x1d3a5e), FOG_BLIZ=new THREE.Color(0xc9dcec);
+scene.fog=new THREE.Fog(FOG.clone(),26,70);
+const camera=new THREE.PerspectiveCamera(40,1,0.1,200);
+scene.add(new THREE.HemisphereLight(0xcfe6ff,0x2a3850,0.8));
+const sun=new THREE.DirectionalLight(0xdfeeff,.75);
+sun.castShadow=true; sun.shadow.mapSize.set(1024,1024);
+Object.assign(sun.shadow.camera,{left:-16,right:16,top:12,bottom:-6,near:1,far:44});
+scene.add(sun,sun.target);
+let camDist=14;
+function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();camDist=Math.max(13,Math.min(26,15/Math.min(camera.aspect,1.5)*1.25))}
+addEventListener('resize',resize); resize();
+const std=(c,o)=>new THREE.MeshStandardMaterial(Object.assign({color:c,roughness:.7},o||{}));
+function mesh(geo,mat,parent,x,y,z){const m=new THREE.Mesh(geo,mat);m.position.set(x||0,y||0,z||0);m.castShadow=true;m.receiveShadow=true;(parent||scene).add(m);return m}
+
+/* ---------- backdrop: sea, icebergs, aurora, snow ---------- */
+const sea=new THREE.Mesh(new THREE.PlaneGeometry(600,120),std(0x0b2a40,{roughness:.2,metalness:.3}));
+sea.rotation.x=-Math.PI/2; sea.position.set(GOAL/2,-1.4,-30); scene.add(sea);
+const bergMat=new THREE.MeshStandardMaterial({color:0xdcefff,roughness:.5,flatShading:true});
+const BR=(s=>()=>{s=(s*16807)%2147483647;return s/2147483647})(9);
+function berg(x,z,s){const g=new THREE.IcosahedronGeometry(1,1),p=g.attributes.position,v=new THREE.Vector3();for(let i=0;i<p.count;i++){v.fromBufferAttribute(p,i);v.multiplyScalar(.75+BR()*.5);p.setXYZ(i,v.x,v.y,v.z)}g.computeVertexNormals();const m=new THREE.Mesh(g,bergMat);m.scale.set(s*(1.3+BR()),s*(.55+BR()*.5),s);m.position.set(x,-1.3+s*.2,z);scene.add(m)}
+for(let x=-20;x<GOAL+40;x+=9+BR()*10)berg(x,-22-BR()*18,1.2+BR()*2.4);
+for(let x=-20;x<GOAL+40;x+=34+BR()*20)berg(x,-70,9+BR()*6);
+const auroraTex=ctex(8,256,(g,w,h)=>{const gr=g.createLinearGradient(0,0,0,h);gr.addColorStop(0,'rgba(140,80,255,0)');gr.addColorStop(.35,'rgba(140,90,255,.35)');gr.addColorStop(.7,'rgba(90,255,170,.55)');gr.addColorStop(1,'rgba(90,255,170,0)');g.fillStyle=gr;g.fillRect(0,0,w,h)});
+const auroras=[];
+for(let i=0;i<3;i++){
+  const geo=new THREE.PlaneGeometry(140,14,70,1);
+  const m=new THREE.Mesh(geo,new THREE.MeshBasicMaterial({map:auroraTex,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,fog:false}));
+  m.position.set(0,20+i*5,-60-i*10); scene.add(m);
+  auroras.push({m,base:geo.attributes.position.array.slice(),ph:i*2.1});
+}
+const SNOW_N=900, snowPos=new Float32Array(SNOW_N*3);
+for(let i=0;i<SNOW_N;i++){snowPos[i*3]=(Math.random()-.5)*50;snowPos[i*3+1]=Math.random()*18-2;snowPos[i*3+2]=(Math.random()-.5)*14}
+const snowGeo=new THREE.BufferGeometry(); snowGeo.setAttribute('position',new THREE.BufferAttribute(snowPos,3));
+const snow=new THREE.Points(snowGeo,new THREE.PointsMaterial({color:0xffffff,size:.12,transparent:true,opacity:.85,depthWrite:false})); scene.add(snow);
+
+/* ---------- level ---------- */
+const snowTop=ctex(128,128,(g,w,h)=>{g.fillStyle='#eef6fc';g.fillRect(0,0,w,h);for(let i=0;i<500;i++){g.fillStyle=`rgba(${150+Math.random()*60|0},${190+Math.random()*40|0},230,.25)`;g.fillRect(Math.random()*w,Math.random()*h,2,2)}},true);
+const iceFront=ctex(256,128,(g,w,h)=>{const gr=g.createLinearGradient(0,0,0,h);gr.addColorStop(0,'#f2fbff');gr.addColorStop(.18,'#bfe6fa');gr.addColorStop(1,'#3d7fae');g.fillStyle=gr;g.fillRect(0,0,w,h);g.strokeStyle='rgba(255,255,255,.35)';g.lineWidth=2;for(let i=0;i<14;i++){g.beginPath();const x=Math.random()*w;g.moveTo(x,20);g.lineTo(x+(Math.random()-.5)*40,h);g.stroke()}},true);
+const iceSide=std(0x6fa8d0,{roughness:.3});
+const segs=[],walls=[],thins=[],fires=[],bears=[],items=[],blizzards=[],signs=[],waters=[];
+function addSeg(x0,x1){
+  const len=x1-x0;
+  const top=std(0xffffff,{map:snowTop.clone(),roughness:.9}); top.map.needsUpdate=true; top.map.repeat.set(len/2,2);
+  const fr=std(0xffffff,{map:iceFront.clone(),roughness:.25}); fr.map.needsUpdate=true; fr.map.repeat.set(len/4,1);
+  const m=new THREE.Mesh(new THREE.BoxGeometry(len,3,4),[iceSide,iceSide,top,iceSide,fr,iceSide]);
+  m.position.set(x0+len/2,-1.5,0); m.receiveShadow=true; scene.add(m);
+  segs.push({x0,x1,top:0});
+}
+function addWater(x0,x1){const w=new THREE.Mesh(new THREE.PlaneGeometry(x1-x0+.4,4),std(0x0f3a56,{roughness:.1,metalness:.4,transparent:true,opacity:.92}));w.rotation.x=-Math.PI/2;w.position.set((x0+x1)/2,-1.1,0);scene.add(w);waters.push({x0,x1})}
+const wallMat=new THREE.MeshPhysicalMaterial?new THREE.MeshStandardMaterial({color:0x9fd8ff,roughness:.08,metalness:.1,transparent:true,opacity:.82,emissive:0x0a2a40}):std(0x9fd8ff);
+const crackTex=ctex(128,256,(g,w,h)=>{g.clearRect(0,0,w,h);g.strokeStyle='rgba(255,255,255,.9)';g.lineWidth=2;for(let k=0;k<5;k++){let x=w/2,y=0;g.beginPath();g.moveTo(x,y);while(y<h){x+=(Math.random()-.5)*40;y+=20+Math.random()*30;g.lineTo(x,y)}g.stroke()}});
+function addWall(x){
+  const g=new THREE.Group(); g.position.set(x,0,0); scene.add(g);
+  const m=mesh(new THREE.BoxGeometry(1,4.4,3.2),wallMat,g,0,2.2,0);
+  const c=new THREE.Mesh(new THREE.PlaneGeometry(1,4.4),new THREE.MeshBasicMaterial({map:crackTex,transparent:true,depthWrite:false})); c.position.set(0,2.2,1.61); g.add(c);
+  walls.push({x0:x-.5,x1:x+.5,h:4.4,g,alive:true});
+}
+const thinMat=new THREE.MeshStandardMaterial({color:0xc9ecff,roughness:.05,metalness:.1,transparent:true,opacity:.55});
+function addThin(x0,x1){
+  const g=new THREE.Group(); scene.add(g);
+  const n=Math.ceil((x1-x0)/1.6), pieces=[];
+  for(let i=0;i<n;i++){const w=(x1-x0)/n;const p=mesh(new THREE.BoxGeometry(w-.04,.14,3.6),thinMat,g,x0+w*(i+.5),-.07,0);p.castShadow=false;pieces.push(p)}
+  const cr=new THREE.Mesh(new THREE.PlaneGeometry(x1-x0,3.6),new THREE.MeshBasicMaterial({map:crackTex,transparent:true,opacity:.0,depthWrite:false}));cr.rotation.x=-Math.PI/2;cr.position.set((x0+x1)/2,.01,0);g.add(cr);
+  thins.push({x0,x1,top:0,g,pieces,crack:cr,alive:true,t:0});
+  addWater(x0,x1);
+}
+const flameMat=new THREE.MeshBasicMaterial({color:0xffa040,transparent:true,opacity:.9}), flameMat2=new THREE.MeshBasicMaterial({color:0xfff0a0,transparent:true,opacity:.9});
+function addFire(x){
+  const g=new THREE.Group(); g.position.set(x,0,.9); scene.add(g);
+  for(let i=0;i<3;i++){const l=mesh(new THREE.CylinderGeometry(.09,.09,1,8),std(0x5a3a22),g,0,.1,0);l.rotation.z=Math.PI/2;l.rotation.y=i*Math.PI/3}
+  const f1=new THREE.Mesh(new THREE.ConeGeometry(.35,.9,10),flameMat); f1.position.y=.55; g.add(f1);
+  const f2=new THREE.Mesh(new THREE.ConeGeometry(.2,.55,10),flameMat2); f2.position.y=.45; g.add(f2);
+  const pl=new THREE.PointLight(0xff9a3c,1.4,7); pl.position.y=1.2; g.add(pl);
+  const ring=new THREE.Mesh(new THREE.RingGeometry(2.1,2.25,40),new THREE.MeshBasicMaterial({color:0xff9a3c,transparent:true,opacity:.35,depthWrite:false}));ring.rotation.x=-Math.PI/2;ring.position.set(0,.02,-.9);g.add(ring);
+  fires.push({x,g,f1,f2,pl});
+}
+function addBlizzard(x0,x1){blizzards.push({x0,x1})}
+function labelTex(t,bg,fg){return ctex(256,96,(g,w,h)=>{g.fillStyle=bg;g.fillRect(0,0,w,h);g.fillStyle=fg;g.font='bold 40px "M PLUS 1 Code","Hiragino Sans",sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText(t,w/2,h/2+2)})}
+const ITEM={
+  cold:{freeze:+38,label:'保冷剤で凍結を進めた',tex:labelTex('保冷剤','#3f8fd8','#ffffff'),col:0x3f8fd8,cls:'ice'},
+  kairo:{freeze:-45,label:'カイロで解凍',tex:labelTex('カイロ','#ffffff','#e5483c'),col:0xf3f0e8,cls:'sp'},
+  tea:{freeze:-18,mental:+14,label:'ホットお茶　メンタル＋14',tex:labelTex('お茶','#5fae4e','#ffffff'),col:0x5fae4e,cls:'good'},
+};
+function addItem(kind,x,y){
+  const g=new THREE.Group(); g.position.set(x,y,0); scene.add(g);
+  mesh(new THREE.BoxGeometry(.55,.7,.18),std(ITEM[kind].col,{roughness:.5}),g);
+  const lab=new THREE.Sprite(new THREE.SpriteMaterial({map:ITEM[kind].tex,transparent:true})); lab.scale.set(1.2,.45,1); lab.position.y=.75; g.add(lab);
+  items.push({kind,x,y,g,taken:false});
+}
+function addSign(x,text){
+  const c=document.createElement('canvas'),g=c.getContext('2d');const f='bold 34px "M PLUS 1 Code","Hiragino Sans",sans-serif';g.font=f;
+  const w=Math.ceil(g.measureText(text).width)+48;c.width=w;c.height=80;g.font=f;g.fillStyle='#6b4a2e';g.fillRect(0,0,w,80);g.fillStyle='#8a6440';g.fillRect(6,6,w-12,68);g.fillStyle='#fff6e6';g.textBaseline='middle';g.fillText(text,24,42);
+  const tx=new THREE.CanvasTexture(c);tx.encoding=THREE.sRGBEncoding;
+  const grp=new THREE.Group(); grp.position.set(x,0,-1.4); scene.add(grp);
+  mesh(new THREE.BoxGeometry(.12,1.8,.12),std(0x5a3a22),grp,0,.9,0);
+  const board=new THREE.Mesh(new THREE.PlaneGeometry(w/80*.7,.7),new THREE.MeshStandardMaterial({map:tx,roughness:.9})); board.position.set(0,1.9,.08); grp.add(board);
+}
+// polar bear (primitives)
+const bearW=std(0xf3f1ea,{roughness:.9}), bearK=new THREE.MeshBasicMaterial({color:0x1a1a1a});
+function addBear(x0,x1){
+  const g=new THREE.Group(); scene.add(g);
+  const b=mesh(new THREE.SphereGeometry(1,20,14),bearW,g,0,1.05,0); b.scale.set(1.25,.78,.72);
+  const h=mesh(new THREE.SphereGeometry(.48,18,12),bearW,g,1.05,1.45,0); h.scale.set(1.15,.95,.95);
+  mesh(new THREE.SphereGeometry(.22,12,10),bearW,g,1.52,1.33,0).scale.set(1.2,.8,.9);
+  mesh(new THREE.SphereGeometry(.08,8,6),bearK,g,1.78,1.36,0);
+  for(const s of[-1,1]){mesh(new THREE.SphereGeometry(.12,8,6),bearW,g,.92,1.86,s*.26);mesh(new THREE.SphereGeometry(.05,6,6),bearK,g,1.38,1.56,s*.17)}
+  const legs=[];for(const lx of[-.7,.65])for(const s of[-1,1]){const l=mesh(new THREE.CylinderGeometry(.2,.22,.7,10),bearW,g,lx,.35,s*.38);legs.push(l)}
+  bears.push({g,x:(x0+x1)/2,x0,x1,dir:1,legs,state:'walk',t:0,vx:0,vy:0,y:0,ph:Math.random()*6});
+}
+function buildLevel(){
+  addSeg(-14,40); addSign(10,'寒い。じっとしていても凍っていく'); addItem('cold',21,1.1); addSign(24,'氷の壁は 凍った豆腐（鈍器）でしか割れない'); addWall(29);
+  addFire(35); addSign(33,'焚き火で解凍。一度凍ると、もう生には戻らない'); addSign(38.6,'薄氷：重い鈍器が乗ると割れる');
+  addThin(40,48);
+  addSeg(48,70); addBear(52,68); addItem('tea',58,2.6);
+  addWater(70,73.2);
+  addSeg(73.2,104); addBlizzard(76,96); addSign(75,'この先、吹雪'); addWall(97); addItem('kairo',99.5,1.1); addFire(102);
+  addThin(104,114);
+  addSeg(114,150); addBear(118,127); addBear(130,140); addItem('cold',137,1.1); addWall(145); addItem('kairo',148,1.1);
+  addThin(150,158);
+  addSeg(158,185); addBlizzard(164,186); addBear(168,182); addItem('tea',176,2.6);
+  addWater(185,188.2);
+  addSeg(188.2,205); addItem('cold',192,1.1); addWall(200); addFire(203.5);
+  addThin(205,212);
+  addSeg(212,GOAL+24); addBear(218,229); addItem('tea',215,1.1);
+  // north pole
+  const pole=new THREE.Group(); pole.position.set(GOAL,0,.4); scene.add(pole);
+  const stripe=ctex(32,256,(g,w,h)=>{for(let i=0;i<8;i++){g.fillStyle=i%2?'#e5483c':'#ffffff';g.fillRect(0,i*32,w,32)}});
+  mesh(new THREE.CylinderGeometry(.12,.12,3.6,12),std(0xffffff,{map:stripe}),pole,0,1.8,0);
+  mesh(new THREE.SphereGeometry(.22,12,10),std(0xf0b92b,{metalness:.6,roughness:.3}),pole,0,3.7,0);
+  const sign=labelTex('北極点','#e5483c','#ffffff');
+  const sp=new THREE.Mesh(new THREE.PlaneGeometry(2.4,.9),new THREE.MeshBasicMaterial({map:sign})); sp.position.set(0,4.4,0); pole.add(sp);
+  const lt=new THREE.PointLight(0xfff0d0,1,10); lt.position.set(0,4,2); pole.add(lt);
+  for(let x=-14;x<GOAL+24;x+=3.5+Math.random()*4){if(segs.some(s=>x>s.x0+.5&&x<s.x1-.5)&&!walls.some(w=>Math.abs(w.x0-x)<2)){const m=mesh(new THREE.SphereGeometry(.3+Math.random()*.4,10,8),std(0xf4faff,{roughness:1}),scene,x,.05,-1.2-Math.random()*.6);m.scale.y=.45}}
+}
+
+/* ---------- tofu ---------- */
+function roundedBox(w,h,d,r,s){
+  const g=new THREE.BoxGeometry(w,h,d,s,s,s),p=g.attributes.position,v=new THREE.Vector3(),c=new THREE.Vector3();
+  const ix=w/2-r,iy=h/2-r,iz=d/2-r;
+  for(let i=0;i<p.count;i++){v.fromBufferAttribute(p,i);c.set(Math.max(-ix,Math.min(ix,v.x)),Math.max(-iy,Math.min(iy,v.y)),Math.max(-iz,Math.min(iz,v.z)));const n=v.clone().sub(c);if(n.lengthSq()>1e-9){n.normalize().multiplyScalar(r);v.copy(c).add(n)}p.setXYZ(i,v.x,v.y,v.z)}
+  g.computeVertexNormals(); g.translate(0,h/2,0); return g;
+}
+const tofuMat=std(0xf6f3ea,{roughness:.5,emissive:0x2a2822});
+const frostTex=ctex(128,128,(g,w,h)=>{g.fillStyle='#d6efff';g.fillRect(0,0,w,h);for(let i=0;i<260;i++){g.fillStyle=`rgba(255,255,255,${.3+Math.random()*.6})`;const s=1+Math.random()*3;g.fillRect(Math.random()*w,Math.random()*h,s,s)}g.strokeStyle='rgba(255,255,255,.7)';for(let i=0;i<10;i++){g.beginPath();g.moveTo(Math.random()*w,Math.random()*h);g.lineTo(Math.random()*w,Math.random()*h);g.stroke()}});
+const frozenMat=new THREE.MeshStandardMaterial({color:0xcfeaff,map:frostTex,roughness:.12,metalness:.15,emissive:0x0a2a44});
+const spongeTex=ctex(128,128,(g,w,h)=>{g.fillStyle='#dcc48e';g.fillRect(0,0,w,h);for(let i=0;i<180;i++){g.fillStyle=`rgba(120,90,40,${.25+Math.random()*.35})`;g.beginPath();g.arc(Math.random()*w,Math.random()*h,1+Math.random()*3.2,0,7);g.fill()}});
+const spongeMat=new THREE.MeshStandardMaterial({color:0xffffff,map:spongeTex,roughness:1,emissive:0x1a1408});
+const black=new THREE.MeshBasicMaterial({color:0x1a1a1a});
+const tofu=new THREE.Group(); scene.add(tofu);
+const body=new THREE.Mesh(roundedBox(.9,1,.9,.1,6),tofuMat); body.castShadow=true; tofu.add(body);
+const eyeG=new THREE.SphereGeometry(.065,10,8);
+const eyeL=new THREE.Mesh(eyeG,black),eyeR=new THREE.Mesh(eyeG,black);
+eyeL.position.set(-.17,.66,.455); eyeR.position.set(.17,.66,.455); eyeL.scale.z=eyeR.scale.z=.4; tofu.add(eyeL,eyeR);
+const mouth=new THREE.Mesh(new THREE.TorusGeometry(.085,.018,6,14,Math.PI),black); mouth.position.set(0,.45,.455); tofu.add(mouth);
+const flatMouth=new THREE.Mesh(new THREE.BoxGeometry(.16,.025,.02),black); flatMouth.position.set(0,.44,.456); flatMouth.visible=false; tofu.add(flatMouth);
+const icicles=[];for(let i=0;i<4;i++){const ic=new THREE.Mesh(new THREE.ConeGeometry(.05,.22,6),new THREE.MeshStandardMaterial({color:0xe6f7ff,roughness:.05,transparent:true,opacity:.85}));ic.rotation.x=Math.PI;ic.scale.set(.8,.7,.8);ic.position.set(-.3+i*.2,.9,.47);ic.visible=false;tofu.add(ic);icicles.push(ic)}
+
+/* ---------- particles ---------- */
+const shardGeo=new THREE.TetrahedronGeometry(.18), shardMat=new THREE.MeshStandardMaterial({color:0xbfe6ff,roughness:.05,transparent:true,opacity:.85});
+const parts=[];
+function burst(x,y,n,spd,mat,geo){for(let i=0;i<n;i++){const m=new THREE.Mesh(geo||shardGeo,mat||shardMat);m.position.set(x+(Math.random()-.5)*.6,y+(Math.random()-.5)*.6,(Math.random()-.5)*.6);scene.add(m);parts.push({m,v:new THREE.Vector3((Math.random()-.5)*spd,Math.random()*spd,(Math.random()-.5)*spd*.6),life:1+Math.random()*.5})}}
+const crumbGeo=new THREE.BoxGeometry(.12,.12,.12);
+
+/* ---------- words ---------- */
+const WORDS=['寒くない？','根性で温まれ','冷凍保存しとくね','凍ってる場合？','頭冷やして','クールにいこう','まだ溶けないの？'];
+const wordTex={};
+function getWordTex(t){
+  if(wordTex[t])return wordTex[t];
+  const c=document.createElement('canvas'),g=c.getContext('2d');const f='bold 46px "M PLUS 1 Code","Hiragino Sans",sans-serif';g.font=f;
+  const w=Math.ceil(g.measureText(t).width)+56,h=96;c.width=w;c.height=h;g.font=f;
+  g.fillStyle='#e5483c';const r=18;g.beginPath();g.moveTo(r,6);g.lineTo(w-r,6);g.quadraticCurveTo(w-4,6,w-4,r+6);g.lineTo(w-4,h-r-14);g.quadraticCurveTo(w-4,h-14,w-r,h-14);g.lineTo(44,h-14);g.lineTo(22,h-2);g.lineTo(28,h-14);g.lineTo(r,h-14);g.quadraticCurveTo(4,h-14,4,h-r-14);g.lineTo(4,r+6);g.quadraticCurveTo(4,6,r,6);g.fill();
+  g.fillStyle='#fff6f2';g.textBaseline='middle';g.fillText(t,28,(h-8)/2+2);
+  const tx=new THREE.CanvasTexture(c);tx.encoding=THREE.sRGBEncoding;return wordTex[t]={tx,a:w/h};
+}
+const projs=[];
+function spawnWord(){
+  const t=WORDS[(Math.random()*WORDS.length)|0],{tx,a}=getWordTex(t),hgt=.7;
+  const s=new THREE.Sprite(new THREE.SpriteMaterial({map:tx,transparent:true})); s.scale.set(hgt*a,hgt,1);
+  s.position.set(P.x+20,.6+Math.random()*2+hgt/2,.3); scene.add(s);
+  projs.push({s,t,vx:-(5+Math.random()*2.5),hw:hgt*a/2*.85,hh:hgt/2*.75,wob:Math.random()*6});
+}
+function clearWords(){for(const p of projs)scene.remove(p.s);projs.length=0}
+
+/* ---------- audio ---------- */
+let ac=null,soundOn=true;
+function sfx(k){
+  if(!ac||!soundOn)return;
+  try{
+    const t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);
+    const env=(v,d)=>{g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.start(t);o.stop(t+d+.02)};
+    if(k==='jump'){o.type='square';o.frequency.setValueAtTime(300,t);o.frequency.exponentialRampToValueAtTime(620,t+.11);env(.05,.14)}
+    else if(k==='hit'){o.type='sawtooth';o.frequency.setValueAtTime(170,t);o.frequency.exponentialRampToValueAtTime(45,t+.25);env(.12,.28)}
+    else if(k==='freeze'){o.type='square';o.frequency.setValueAtTime(2200,t);o.frequency.exponentialRampToValueAtTime(3800,t+.25);env(.05,.3)}
+    else if(k==='thaw'){o.type='sine';o.frequency.setValueAtTime(900,t);o.frequency.exponentialRampToValueAtTime(300,t+.3);env(.08,.35)}
+    else if(k==='smash'){o.type='square';o.frequency.setValueAtTime(140,t);o.frequency.exponentialRampToValueAtTime(40,t+.3);env(.16,.35)}
+    else if(k==='crack'){o.type='sawtooth';o.frequency.setValueAtTime(1600,t);o.frequency.exponentialRampToValueAtTime(200,t+.2);env(.06,.22)}
+    else if(k==='item'){o.type='triangle';o.frequency.setValueAtTime(660,t);o.frequency.setValueAtTime(990,t+.08);env(.09,.22)}
+    else if(k==='splash'){o.type='sawtooth';o.frequency.setValueAtTime(400,t);o.frequency.exponentialRampToValueAtTime(60,t+.6);env(.1,.65)}
+    else if(k==='die'){o.type='sawtooth';o.frequency.setValueAtTime(320,t);o.frequency.exponentialRampToValueAtTime(40,t+.9);env(.1,.95)}
+    else if(k==='clear'){o.type='triangle';[523,659,784,1046,1318].forEach((f,i)=>o.frequency.setValueAtTime(f,t+i*.12));env(.1,.8)}
+  }catch(e){}
+}
+let bgm=null,bgmFallback=false;
+function makeBgm(src){const a=new Audio();a.loop=true;a.preload='auto';a.volume=.5;a.src=src;a.muted=!soundOn;
+  a.addEventListener('error',()=>{if(bgmFallback)return;bgmFallback=true;fetch('bgm.mp3').then(r=>r.blob()).then(b=>{bgm=makeBgm(URL.createObjectURL(b));if(state==='play')bgm.play().catch(()=>{})}).catch(()=>{})});
+  return a;}
+function bgmPlay(){if(!bgm)bgm=makeBgm('bgm.mp3');try{bgm.currentTime=0}catch(e){}bgm.volume=.5;bgm.muted=!soundOn;bgm.play().catch(()=>{})}
+function bgmDuck(v){if(bgm)bgm.volume=v}
+$('#mute').addEventListener('click',e=>{soundOn=!soundOn;e.currentTarget.textContent=soundOn?'音 ON':'音 OFF';if(bgm)bgm.muted=!soundOn});
+
+/* ---------- UI ---------- */
+let toastT=0;
+function toast(t,cls){const el=$('#toast');el.textContent=t;el.className='toast on '+(cls||'');toastT=1.8}
+function flash(){const f=$('#flash');f.classList.add('on');requestAnimationFrame(()=>requestAnimationFrame(()=>f.classList.remove('on')))}
+function getBest(){try{return parseFloat(localStorage.getItem('tofuBestArctic'))||0}catch(e){return 0}}
+function setBest(v){try{localStorage.setItem('tofuBestArctic',String(v))}catch(e){}}
+function showBest(){const b=getBest();$('#best').textContent=b?`自己ベスト ${b.toFixed(1)} 秒で北極点`:'凍るタイミングと、解けるタイミングが勝負'}
+showBest();
+let lastHud='';
+function hud(){
+  const m=Math.ceil(P.mental),f=Math.floor(P.freeze),d=Math.max(0,Math.ceil(GOAL-P.x));
+  const key=m+'|'+f+'|'+d+'|'+P.st; if(key===lastHud)return; lastHud=key;
+  $('#mval').textContent=m; const fl=$('#fill'); fl.style.width=m+'%'; fl.style.backgroundColor=m>50?'var(--tofu)':m>25?'var(--hazard)':'var(--alert)';
+  $('#fval').textContent=f; $('#ffill').style.width=f+'%';
+  const chip=$('#chip'); chip.textContent=PHYS[P.st].label; chip.className='chip '+PHYS[P.st].cls;
+  $('#m').textContent=d+' m'; $('#sub').textContent=inBliz?'吹雪の中　北極点まで':'北極点まで';
+  $('#frost').style.opacity=f>80?Math.min(1,(f-80)/20):0;
+}
+
+/* ---------- input ---------- */
+const K={l:false,r:false};let jumpQ=0;
+const LK=['ArrowLeft','KeyA'],RK=['ArrowRight','KeyD'],JK=['Space','ArrowUp','KeyW'];
+addEventListener('keydown',e=>{
+  if(LK.includes(e.code))K.l=true; if(RK.includes(e.code))K.r=true;
+  if(JK.includes(e.code)){e.preventDefault();if(!e.repeat)jumpQ=.15}
+  if((e.code==='Enter'||e.code==='Space')&&(state==='title'||state==='over')&&!e.repeat){e.preventDefault();start()}
+});
+addEventListener('keyup',e=>{if(LK.includes(e.code))K.l=false;if(RK.includes(e.code))K.r=false});
+function hold(id,on,off){const b=$(id);
+  b.addEventListener('pointerdown',e=>{e.preventDefault();try{b.setPointerCapture(e.pointerId)}catch(_){}b.classList.add('on');on()});
+  const up=()=>{b.classList.remove('on');off&&off()};b.addEventListener('pointerup',up);b.addEventListener('pointercancel',up);b.addEventListener('lostpointercapture',up);
+  b.addEventListener('contextmenu',e=>e.preventDefault());}
+hold('#bl',()=>K.l=true,()=>K.l=false);
+hold('#br',()=>K.r=true,()=>K.r=false);
+hold('#bj',()=>jumpQ=.15);
+addEventListener('blur',()=>{K.l=K.r=false});
+
+/* ---------- state ---------- */
+const P={};
+let state='title',playT=0,wordT=6,shake=0,camX=0,camY=2,inBliz=false,stats={frozen:0,thawed:0,walls:0,bears:0};
+function resetPlayer(){Object.assign(P,{x:0,y:0,vx:0,vy:0,ground:true,coyote:0,jumps:0,mental:100,freeze:0,st:'soft',inv:0,sq:1,sqV:0,tilt:0,blink:2,on:null,dead:false})}
+function resetLevel(){
+  for(const w of walls){w.alive=true;w.g.visible=true}
+  for(const t of thins){t.alive=true;t.t=0;t.crack.material.opacity=0;t.pieces.forEach(p=>{p.visible=true;p.position.y=-.07;p.rotation.set(0,0,0);p.userData.vy=0})}
+  for(const b of bears){b.state='walk';b.x=(b.x0+b.x1)/2;b.y=0;b.g.visible=true;b.g.rotation.set(0,0,0)}
+  for(const it of items){it.taken=false;it.g.visible=true}
+  for(const p of parts)scene.remove(p.m); parts.length=0;
+  clearWords(); stats={frozen:0,thawed:0,walls:0,bears:0};
+}
+function start(){
+  if(!ac){try{ac=new (window.AudioContext||window.webkitAudioContext)()}catch(e){}}
+  if(ac&&ac.state==='suspended')ac.resume();
+  resetPlayer(); resetLevel(); playT=0; wordT=6; camX=P.x+2.5; lastHud=''; tofu.visible=true;
+  $('#ovTitle').hidden=true; $('#ovEnd').hidden=true;
+  bgmPlay(); state='play'; toast('上陸。豆腐は、だんだん凍っていく','');
+}
+$('#startBtn').addEventListener('click',start);
+$('#retryBtn').addEventListener('click',start);
+
+function setState(st){
+  if(P.st===st)return;
+  const prev=P.st; P.st=st;
+  if(st==='frozen'){stats.frozen++;sfx('freeze');burst(P.x,.6,10,4);toast('凍結：鈍器モード。氷の壁を割れる','ice');P.sq=.8}
+  else if(st==='sponge'){stats.thawed++;sfx('thaw');burst(P.x,.6,8,3,spongeMat,crumbGeo);toast(prev==='frozen'&&stats.thawed>1?'解凍：またスポンジ':'解凍：スポンジ化。もう生には戻れない','sp');P.sq=1.2}
+}
+function hurt(n,label){
+  if(P.inv>0||state!=='play')return false;
+  if(P.st==='sponge')n=Math.round(n*1.3);
+  P.mental=Math.max(0,P.mental-n); P.inv=1.0; shake=.5; flash(); sfx('hit');
+  toast(label+'　−'+n,'bad'); burst(P.x,P.y+.6,6,4,P.st==='sponge'?spongeMat:tofuMat,crumbGeo); P.sq=.6;
+  if(P.mental<=0)die('崩壊','崩れた','物性がどうであれ、メンタルは豆腐のままだった。');
+  return true;
+}
+function die(kicker,title,lead){
+  if(state!=='play')return;
+  state='dead'; P.dead=true; sfx('die'); shake=.6; bgmDuck(.18); tofu.visible=false;
+  burst(P.x,P.y+.3,30,6,P.st==='frozen'?shardMat:P.st==='sponge'?spongeMat:tofuMat,P.st==='frozen'?shardGeo:crumbGeo);
+  setTimeout(()=>endScreen(kicker,title,lead,false),1100);
+}
+function endScreen(kicker,title,lead,win){
+  state='over';
+  $('#endKicker').textContent=kicker; $('#endTitle').textContent=title; $('#endLead').textContent=lead;
+  const d=Math.max(0,Math.ceil(GOAL-P.x));
+  const stLine=`凍結 <b>${stats.frozen}</b> 回　解凍 <b>${stats.thawed}</b> 回　割った壁 <b>${stats.walls}</b>　はじいたクマ <b>${stats.bears}</b>`;
+  if(win){
+    const best=getBest(),nb=!best||playT<best; if(nb)setBest(playT);
+    $('#endResult').innerHTML=`所要 <b>${playT.toFixed(1)} 秒</b>${nb?'（自己ベスト）':''}　残りメンタル <b>${Math.ceil(P.mental)}</b><br>${stLine}`;
+    $('#retryBtn').textContent='もう一度上陸';
+  }else{
+    $('#endResult').innerHTML=`北極点まであと <b>${d} m</b><br>${stLine}`;
+  }
+  const txt=win?`北極点に到達！\n称号【${title}】\n凍結${stats.frozen}回・解凍${stats.thawed}回・${playT.toFixed(1)}秒\n物性は変わった。メンタルは変わっていない。\n#すり潰されて豆腐メンタル`:`北極で……${title}\n北極点まであと${d}m\n#すり潰されて豆腐メンタル`;
+  $('#shareBtn').href='https://x.com/intent/post?text='+encodeURIComponent(txt)+'&url='+encodeURIComponent(SITE);
+  $('#ovEnd').hidden=false; showBest();
+}
+function win(){
+  state='clear'; sfx('clear'); bgmDuck(.35); toast('北極点！','good');
+  const title=P.st==='frozen'?'鈍器のまま北極点':P.st==='sponge'?'スポンジで北極点':'生のまま北極点（奇跡）';
+  setTimeout(()=>endScreen('北極点 到達',title,'物性は変わった。メンタルは、変わっていない。',true),900);
+}
+
+/* ---------- update ---------- */
+function solidSurfaces(){
+  const list=segs.slice();
+  for(const t of thins)if(t.alive)list.push(t);
+  return list;
+}
+function update(dt){
+  playT+=dt;
+  const ph=PHYS[P.st], hw=.45, h=1;
+  // environment: freeze
+  inBliz=blizzards.some(b=>P.x>b.x0&&P.x<b.x1);
+  let df=2.4+(inBliz?9:0);
+  let nearFire=false;
+  for(const f of fires)if(Math.abs(P.x-f.x)<2.2&&P.y<2){df=-32;nearFire=true}
+  P.freeze=Math.max(0,Math.min(100,P.freeze+df*dt));
+  if(P.st!=='frozen'&&P.freeze>=FREEZE_AT)setState('frozen');
+  else if(P.st==='frozen'&&P.freeze<THAW_AT)setState('sponge');
+  if(P.freeze>=100){die('冷凍保存','冷凍保存された','完全に凍った。北極では、それは保存と呼ばれる。');return}
+  // move
+  const dir=(K.r?1:0)-(K.l?1:0);
+  const wind=inBliz?-1.6:0;
+  P.vx+=(dir*ph.spd+wind-P.vx)*Math.min(1,dt*(P.ground?ph.acc:ph.acc*.5));
+  if(dir)P.tilt+=(dir*.35-P.tilt)*Math.min(1,dt*10); else P.tilt*=1-Math.min(1,dt*6);
+  P.coyote=P.ground?.1:Math.max(0,P.coyote-dt);
+  if(jumpQ>0){
+    if(P.ground||P.coyote>0){P.vy=ph.jv;P.jumps=1;P.ground=false;P.coyote=0;jumpQ=0;P.sq=1.25;sfx('jump')}
+    else if(ph.dbl&&P.jumps<2){P.vy=ph.jv*.85;P.jumps=2;jumpQ=0;P.sq=1.2;sfx('jump')}
+  }
+  jumpQ=Math.max(0,jumpQ-dt);
+  P.vy-=ph.g*dt; if(P.vy<-26)P.vy=-26;
+  const px=P.x; P.x+=P.vx*dt; if(P.x<-13)P.x=-13;
+  for(const s of segs){if(P.y<s.top-.05&&P.x+hw>s.x0&&P.x-hw<s.x1){P.x=px<(s.x0+s.x1)/2?s.x0-hw:s.x1+hw;P.vx=0}}
+  for(const w of walls){
+    if(!w.alive)continue;
+    if(P.y<w.h&&P.x+hw>w.x0&&P.x-hw<w.x1){
+      if(P.st==='frozen'){w.alive=false;w.g.visible=false;stats.walls++;sfx('smash');shake=.6;burst((w.x0+w.x1)/2,2,26,7);toast('氷の壁を粉砕','ice')}
+      else{P.x=px<(w.x0+w.x1)/2?w.x0-hw:w.x1+hw;P.vx=0;if(!w.hinted){w.hinted=true;toast('割るには凍らないと……','')}}
+    }
+  }
+  const py=P.y; P.y+=P.vy*dt; const wasG=P.ground; P.ground=false; P.on=null;
+  if(P.vy<=0){for(const s of solidSurfaces()){if(P.x+hw>s.x0&&P.x-hw<s.x1&&py>=s.top-.03&&P.y<=s.top){P.y=s.top;P.vy=0;P.ground=true;P.jumps=0;P.on=s;break}}}
+  if(P.ground&&!wasG)P.sq=Math.min(P.sq,P.st==='frozen'?.6:.72);
+  // thin ice under a frozen tofu
+  if(P.on&&P.on.pieces){
+    const t=P.on;
+    if(P.st==='frozen'){t.t+=dt;t.crack.material.opacity=Math.min(.9,t.t*3);if(t.t>.05&&t.t-dt<=.05)sfx('crack');if(t.t>.35){t.alive=false;sfx('crack');shake=.3;t.pieces.forEach(p=>p.userData.vy=-1-Math.random()*2);toast('薄氷が割れた！','bad')}}
+  }
+  if(P.y<-1.2){
+    sfx('splash');
+    die('落水',P.st==='sponge'?'海水を吸って沈んだ':P.st==='frozen'?'鈍器のまま沈んだ':'北極海に沈んだ',P.st==='sponge'?'スポンジは、よく吸う。北極海の水も、よく吸う。':'北極海は冷たい。豆腐には、少し深すぎた。');
+    return;
+  }
+  // items
+  for(const it of items){
+    if(it.taken)continue;
+    if(Math.abs(it.x-P.x)<.7&&Math.abs(it.y-(P.y+.5))<.9){
+      it.taken=true;it.g.visible=false;const d=ITEM[it.kind];
+      P.freeze=Math.max(0,Math.min(100,P.freeze+d.freeze)); if(d.mental)P.mental=Math.min(100,P.mental+d.mental);
+      sfx('item'); toast(d.label,d.cls);
+      if(P.st!=='frozen'&&P.freeze>=FREEZE_AT)setState('frozen'); else if(P.st==='frozen'&&P.freeze<THAW_AT)setState('sponge');
+    }
+  }
+  // bears
+  for(const b of bears){
+    if(b.state==='walk'){
+      b.x+=b.dir*1.5*dt; if(b.x>b.x1){b.x=b.x1;b.dir=-1} if(b.x<b.x0){b.x=b.x0;b.dir=1}
+      if(Math.abs(P.x-b.x)<1.5&&P.y<1.9){
+        if(P.st==='frozen'){b.state='fly';b.t=0;b.vx=(b.x>P.x?1:-1)*7;b.vy=9;stats.bears++;sfx('smash');shake=.4;toast('クマ、はじき飛ばされる','ice');P.vx*=.4}
+        else if(hurt(20,'クマにじゃれつかれた')){P.vx=(P.x<b.x?-1:1)*7;P.vy=6;P.ground=false}
+      }
+    }else if(b.state==='fly'){
+      b.t+=dt;b.vy-=20*dt;b.x+=b.vx*dt;b.y+=b.vy*dt;b.g.rotation.z+=dt*6*Math.sign(-b.vx);if(b.t>2){b.state='gone';b.g.visible=false}
+    }
+  }
+  // words
+  wordT-=dt;
+  if(wordT<=0&&P.x>45&&P.x<GOAL-10){spawnWord();wordT=3.6-P.x/GOAL*1.2+Math.random()*1.8}
+  for(let i=projs.length-1;i>=0;i--){
+    const p=projs[i];p.s.position.x+=p.vx*dt;p.wob+=dt*5;p.s.position.y+=Math.sin(p.wob)*dt*.4;
+    const sx=p.s.position.x,sy=p.s.position.y;
+    if(Math.abs(sx-P.x)<p.hw+hw*.8&&sy+p.hh>P.y&&sy-p.hh<P.y+h){
+      if(P.st==='frozen'){burst(sx,sy,8,4);sfx('smash');scene.remove(p.s);projs.splice(i,1);continue}
+      if(hurt(12,'「'+p.t+'」')){scene.remove(p.s);projs.splice(i,1);continue}
+    }
+    if(sx<P.x-22){scene.remove(p.s);projs.splice(i,1)}
+  }
+  P.inv=Math.max(0,P.inv-dt);
+  if(P.x>=GOAL)win();
+}
+
+/* ---------- frame ---------- */
+const clk=new THREE.Clock();
+function frame(){
+  requestAnimationFrame(frame);
+  const dt=Math.min(clk.getDelta(),1/30), t=clk.elapsedTime;
+  if(state==='play')update(dt);
+  // thin ice pieces falling
+  for(const th of thins)if(!th.alive)th.pieces.forEach(p=>{if(!p.visible)return;p.userData.vy-=14*dt;p.position.y+=p.userData.vy*dt;p.rotation.z+=dt*(p.userData.vy*.1);if(p.position.y<-3)p.visible=false});
+  for(const b of bears){if(!b.g.visible)continue;b.g.position.set(b.x,b.y,-.1);if(b.state==='walk'){b.g.rotation.y=b.dir>0?0:Math.PI;b.ph+=dt*6;b.legs.forEach((l,i)=>l.rotation.z=Math.sin(b.ph+(i%2?Math.PI:0))*.4)}}
+  for(const it of items)if(!it.taken){it.g.position.y=it.y+Math.sin(t*3+it.x)*.1;it.g.rotation.y+=dt*1.6}
+  for(const f of fires){const s=1+Math.sin(t*14+f.x)*.12+Math.random()*.06;f.f1.scale.set(s,s*1.1,s);f.f2.scale.set(s*.9,s,s*.9);f.pl.intensity=1.2+Math.sin(t*11+f.x)*.25}
+  for(const a of auroras){const pa=a.m.geometry.attributes.position;for(let i=0;i<pa.count;i++){const bx=a.base[i*3],by=a.base[i*3+1];pa.setY(i,by+Math.sin(bx*.06+t*.4+a.ph)*3+Math.sin(bx*.13-t*.7)*1.2);pa.setZ(i,Math.sin(bx*.05+t*.3+a.ph)*4)}pa.needsUpdate=true;a.m.position.x=camX*.6}
+  for(let i=parts.length-1;i>=0;i--){const p=parts[i];p.life-=dt;p.v.y-=18*dt;p.m.position.addScaledVector(p.v,dt);p.m.rotation.x+=dt*6;if(p.life<=0||p.m.position.y<-4){scene.remove(p.m);parts.splice(i,1)}}
+  // snow follows camera; blizzard blows sideways
+  const sp=snowGeo.attributes.position, bliz=state==='play'&&inBliz;
+  for(let i=0;i<SNOW_N;i++){let x=sp.getX(i)+(bliz?-14:-.6)*dt,y=sp.getY(i)-(bliz?3.2:1.4)*dt;if(y<-2)y+=18;if(x<-25)x+=50;sp.setXY(i,x,y)}
+  sp.needsUpdate=true; snow.position.x=camX; snow.position.y=camY-2; snow.material.size=bliz?.16:.12;
+  scene.fog.color.lerp(bliz?FOG_BLIZ:FOG,Math.min(1,dt*2)); scene.fog.near+=((bliz?8:26)-scene.fog.near)*Math.min(1,dt*2); scene.fog.far+=((bliz?30:70)-scene.fog.far)*Math.min(1,dt*2);
+  // tofu look
+  if(!P.dead){
+    P.sqV+=(1-P.sq)*180*dt; P.sqV*=Math.pow(.0009,dt); P.sq+=P.sqV*dt;
+    const sy=P.sq, sxz=1/Math.sqrt(Math.max(.4,P.sq));
+    tofu.position.set(P.x,P.y,0); tofu.scale.set(sxz,sy,sxz); tofu.rotation.y=P.tilt; tofu.rotation.z=-P.vx*.012;
+    body.material=P.st==='frozen'?frozenMat:P.st==='sponge'?spongeMat:tofuMat;
+    icicles.forEach(ic=>ic.visible=P.st==='frozen');
+    const fz=P.st==='frozen'; mouth.visible=!fz; flatMouth.visible=fz;
+    tofu.visible=state==='title'||P.inv<=0||Math.floor(P.inv*14)%2===0;
+    P.blink-=dt; const bl=fz?.35:(P.blink<.12?.15:1); if(P.blink<0)P.blink=2+Math.random()*3;
+    eyeL.scale.y=eyeR.scale.y=bl/Math.max(.4,sy)*.9;
+    const sad=P.mental<=50; mouth.rotation.z=sad?0:Math.PI; mouth.position.y=sad?.4:.47;
+    if(state==='play'&&P.freeze>70&&!fz)tofu.position.x+=Math.sin(t*50)*.02;
+  }
+  const tx=P.x+2.5, ty=Math.max(2,P.y*.6+2);
+  camX+=(tx-camX)*Math.min(1,dt*4); camY+=(ty-camY)*Math.min(1,dt*3);
+  shake=Math.max(0,shake-dt); const sk=shake*shake*1.2;
+  camera.position.set(camX+(Math.random()-.5)*sk,camY+2.4+(Math.random()-.5)*sk,camDist);
+  camera.lookAt(camX,camY,0);
+  sun.position.set(camX-6,14,10); sun.target.position.set(camX,0,0);
+  if(toastT>0){toastT-=dt;if(toastT<=0)$('#toast').classList.remove('on')}
+  if(state==='play')hud();
+  renderer.render(scene,camera);
+}
+buildLevel(); resetPlayer(); hud(); frame();
+if(location.hash==='#dbg')window.__dbg={P,start,get state(){return state},walls,thins,bears,setState,snap:()=>{camX=P.x+2.5;camY=2},tofu,step:(n,k)=>{Object.assign(K,k||{});for(let i=0;i<n&&state==='play';i++)update(1/30);Object.assign(K,{l:false,r:false})}};
+})();
+</script>
+</body>
+</html>
