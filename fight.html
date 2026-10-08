@@ -49,7 +49,7 @@ html,body{height:100%;margin:0;overflow:hidden;background:#1a140e;color:var(--in
 .banner.red{color:var(--alert)}
 .combo{position:fixed;left:16px;top:calc(env(safe-area-inset-top,0px) + 92px);font-family:var(--f-display);font-size:clamp(22px,6vw,36px);color:var(--hazard);text-shadow:0 3px 0 #2a1d05;opacity:0;transition:opacity .2s;pointer-events:none;z-index:6}
 .combo.on{opacity:1}
-.toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 92px);transform:translateX(-50%);font-weight:700;font-size:15px;color:var(--tofu);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:6px 14px;white-space:nowrap;opacity:0;transition:opacity .2s;pointer-events:none;z-index:6}
+.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 24px);transform:translateX(-50%);font-weight:700;font-size:15px;color:var(--tofu);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:6px 14px;white-space:nowrap;opacity:0;transition:opacity .2s;pointer-events:none;z-index:6}
 .toast.on{opacity:1}
 .toast.bad{color:#ffb3ab;border-color:var(--alert)}
 .toast.good{color:#cfeec5;border-color:var(--negi)}
@@ -68,6 +68,7 @@ h1 .st{display:block;font-family:var(--f-display);font-size:clamp(18px,5vw,26px)
 .keys b{color:var(--ink)}
 .btns{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:22px}
 .btn{font-family:var(--f-display);font-size:20px;color:#1b1206;background:var(--hinoki);border:0;border-radius:6px;padding:12px 34px;cursor:pointer;box-shadow:0 4px 0 #7a5a2e}
+.btn:disabled{opacity:.55;cursor:wait}
 .btn:active{transform:translateY(3px);box-shadow:0 1px 0 #7a5a2e}
 .ghost{display:inline-block;font-family:var(--f-display);font-size:16px;color:var(--ink);background:transparent;border:2px solid var(--ink);border-radius:6px;padding:10px 20px;text-decoration:none;cursor:pointer}
 .btn:focus-visible,.ghost:focus-visible,.mute:focus-visible{outline:2px solid var(--hazard);outline-offset:2px}
@@ -81,7 +82,7 @@ h1 .st{display:block;font-family:var(--f-display);font-size:clamp(18px,5vw,26px)
 .pb.jmp{font-size:13px;border-color:rgba(240,185,43,.7);color:var(--hazard)}
 .pb.grd{font-size:13px;border-color:rgba(216,192,138,.7);color:var(--kooya)}
 .pb.on{background:rgba(217,180,122,.3)}
-@media (pointer:coarse){.pad{display:flex}}
+@media (pointer:coarse){.pad{display:flex}.toast{bottom:calc(env(safe-area-inset-bottom,0px) + 112px)}}
 @media (prefers-reduced-motion:reduce){.hp i,.toast,.combo,.banner{transition:none}}
 </style>
 </head>
@@ -132,9 +133,10 @@ h1 .st{display:block;font-family:var(--f-display);font-size:clamp(18px,5vw,26px)
       <b>K / X（長押し）</b><span>高野豆腐ガード。ゲージが尽きると崩れる</span>
       <b>横一文字</b><span>低い斬撃。ジャンプでかわせる</span>
       <b>縦割り</b><span>踏み込んで振り下ろす。下がるかガード</span>
+      <b>見習い</b><span>ときどき走ってくる。体当たりか踏みつけで一発退散</span>
     </div>
     <div class="btns">
-      <button class="btn" id="startBtn" type="button">まな板に上がる</button>
+      <button class="btn" id="startBtn" type="button" disabled>読み込み中…</button>
       <a class="ghost" href="./">1面へ</a>
     </div>
     <div class="note" id="best"></div>
@@ -157,6 +159,7 @@ h1 .st{display:block;font-family:var(--f-display);font-size:clamp(18px,5vw,26px)
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 <script>
 (()=>{
 const $=s=>document.querySelector(s);
@@ -199,12 +202,12 @@ const norenTex=ctex(768,256,(g,w,h)=>{g.fillStyle='#26365e';g.fillRect(0,0,w,h);
 const noren=new THREE.Mesh(new THREE.PlaneGeometry(6.6,2.2),new THREE.MeshStandardMaterial({map:norenTex,roughness:.9,side:THREE.DoubleSide})); noren.position.set(0,6.1,-4.05); scene.add(noren);
 const shelf=mesh(new THREE.BoxGeometry(12,.16,.9),std(0x7a5a36),scene,0,3.9,-3.7);
 const bowlMat=std(0xf3efe6,{roughness:.4}),bowlMat2=std(0x2b3a5a,{roughness:.4});
-for(let i=0;i<7;i++){const b=mesh(new THREE.CylinderGeometry(.42,.26,.34,20),i%2?bowlMat2:bowlMat,scene,-5+i*1.6,4.15,-3.6)}
+for(let i=0;i<7;i++){const b=mesh(new THREE.CylinderGeometry(.42,.26,.34,20),i%2?bowlMat2:bowlMat,scene,-5+i*1.6,4.15,-3.6);b.castShadow=false}
 const soyMat=std(0x4a220c,{roughness:.25}),capMat=std(0xd8342a);
 mesh(new THREE.CylinderGeometry(.22,.26,.7,14),soyMat,scene,5.6,4.33,-3.5); mesh(new THREE.CylinderGeometry(.09,.18,.22,12),capMat,scene,5.6,4.8,-3.5);
 const lamps=[];
 for(const lx of[-6,0,6]){
-  const shade=mesh(new THREE.ConeGeometry(.9,.7,20,1,true),std(0x2a2018,{side:THREE.DoubleSide}),scene,lx,8.6,-1);
+  const shade=mesh(new THREE.ConeGeometry(.9,.7,20,1,true),std(0x2a2018,{side:THREE.DoubleSide}),scene,lx,8.6,-1); shade.castShadow=false;
   const bulb=new THREE.Mesh(new THREE.SphereGeometry(.22,12,10),new THREE.MeshBasicMaterial({color:0xffe0a8})); bulb.position.set(lx,8.3,-1); scene.add(bulb);
   const pl=new THREE.PointLight(0xffc98a,.55,16); pl.position.set(lx,7.8,0); scene.add(pl); lamps.push(pl);
   const cord=new THREE.Mesh(new THREE.CylinderGeometry(.02,.02,4,6),new THREE.MeshBasicMaterial({color:0x111111})); cord.position.set(lx,10.9,-1); scene.add(cord);
@@ -270,6 +273,111 @@ const it={};
   it.blade=std(0xdfe6ee,{metalness:.9,roughness:.18,emissive:0x000000});
   mesh(new THREE.BoxGeometry(.03,.18,1.05),it.blade,knife,0,.03,.82);
 })();
+
+/* ---------- CC0 characters: RobotExpressive (Quaternius / Tomás Laulhé) and Kenney character ---------- */
+let robot=null, mixer=null, acts={}, curAct=null, robMats=[], MINI=null;
+function playA(name,o){
+  o=o||{}; const a=acts[name]; if(!a)return;
+  const fresh=o.time!==undefined||o.restart;
+  if(curAct===a&&!fresh){if(o.ts!==undefined)a.timeScale=o.ts;return}
+  a.reset(); a.enabled=true; a.setEffectiveWeight(1);
+  a.setLoop(o.once?THREE.LoopOnce:THREE.LoopRepeat,Infinity); a.clampWhenFinished=!!o.once;
+  a.timeScale=o.ts===undefined?1:o.ts; if(o.time!==undefined)a.time=o.time;
+  a.play(); if(curAct&&curAct!==a)curAct.crossFadeTo(a,o.fade===undefined?.15:o.fade,false);
+  curAct=a;
+}
+function setupRobot(gltf){
+  const rob=gltf.scene, S=.86;
+  rob.scale.setScalar(S);
+  rob.traverse(o=>{if(!o.isMesh)return;o.castShadow=true;o.receiveShadow=true;const n=o.material.name;o.material=o.material.clone();
+    if(n==='Main'){o.material.color.setHex(0xf4f4f0);o.material.metalness=0;o.material.roughness=.75}
+    else if(n==='Grey'){o.material.color.setHex(0x26365e);o.material.metalness=.1}
+    if(!o.material.emissive)o.material.emissive=new THREE.Color(0);
+    robMats.push(o.material);
+    if(o.morphTargetDictionary&&o.morphTargetDictionary.Angry!==undefined)o.morphTargetInfluences[o.morphTargetDictionary.Angry]=1});
+  const wrap=new THREE.Group(); wrap.add(rob); it.g.add(wrap); it.robWrap=wrap;
+  const ry=it.g.rotation.y, gx=it.g.position.x; it.g.rotation.y=0; it.g.position.x=0;
+  mixer=new THREE.AnimationMixer(rob);
+  for(const c of gltf.animations)acts[c.name]=mixer.clipAction(c);
+  acts.Idle.play(); curAct=acts.Idle; mixer.update(0); it.g.updateMatrixWorld(true);
+  // hachimaki around the head mesh
+  const headMesh=rob.getObjectByName('Head_3')||rob.getObjectByName('Head_2'), headBone=rob.getObjectByName('Head_1');
+  if(headMesh&&headBone){
+    const hb=new THREE.Box3().setFromObject(headMesh), c=hb.getCenter(new THREE.Vector3()), sz=hb.getSize(new THREE.Vector3());
+    const band=new THREE.Mesh(new THREE.TorusGeometry(1,.09,8,32),it.hb); band.castShadow=true;
+    band.rotation.x=Math.PI/2; band.scale.set(sz.x*.47,sz.z*.47,sz.y*.42);
+    band.position.set(c.x,c.y+sz.y*.06,c.z); scene.add(band); headBone.attach(band);
+    for(const s2 of[-1,1]){const t=new THREE.Mesh(new THREE.BoxGeometry(sz.x*.06,sz.y*.32,sz.x*.03),it.hb);t.position.set(c.x+s2*sz.x*.07,c.y-sz.y*.02,c.z-sz.z*.56);t.rotation.z=s2*.35;scene.add(t);headBone.attach(t)}
+  }
+  // knife in the right fist
+  const palm=rob.getObjectByName('Palm2R');
+  if(palm){
+    const pw=palm.getWorldPosition(new THREE.Vector3());
+    const k=new THREE.Group();
+    mesh(new THREE.BoxGeometry(.12,.12,.42),std(0x8a5a32),k,0,0,.05);
+    mesh(new THREE.BoxGeometry(.04,.24,1.25),it.blade,k,0,.04,.86);
+    k.position.copy(pw); scene.add(k); palm.attach(k); it.robKnife=k;
+  }
+  it.g.rotation.y=ry; it.g.position.x=gx;
+  it.root.visible=false; robot=rob;
+}
+function setupMinion(gltf){MINI=gltf}
+function loadChars(){
+  if(!THREE.GLTFLoader)return Promise.resolve();
+  const L=new THREE.GLTFLoader();
+  const one=(u,f)=>new Promise(res=>L.load(u,g=>{try{f(g)}catch(e){console.warn(e)}res()},undefined,()=>res()));
+  return Promise.race([Promise.all([one('models/chars/robot.glb',setupRobot),one('models/chars/kenney-character.glb',setupMinion)]),new Promise(r=>setTimeout(r,10000))]);
+}
+
+/* ---------- apprentices (見習い) ---------- */
+const minions=[]; let minionT=12;
+const MINI_SAY=['修行中です！','親方〜！','手伝います！'];
+function spawnMinion(){
+  if(!MINI||minions.length>=2)return;
+  const side=Math.random()<.5?-1:1, g=new THREE.Group();
+  const body=MINI.scene.clone(true); body.scale.setScalar(1.3);
+  body.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});
+  g.add(body); scene.add(g);
+  const box=new THREE.Box3().setFromObject(body), sz=box.getSize(new THREE.Vector3());
+  const band=new THREE.Mesh(new THREE.TorusGeometry(1,.1,8,24),std(0xf4f4f0)); band.rotation.x=Math.PI/2; band.scale.set(sz.x*.3,sz.z*.5,sz.y*.25); band.position.y=box.max.y-sz.y*.22; g.add(band);
+  const k=knifeMesh(); k.scale.setScalar(.6); k.position.set(.45,sz.y*.42,.25); k.rotation.y=-Math.PI/2; g.add(k);
+  const mx=new THREE.AnimationMixer(body); const walk=MINI.animations.find(a=>a.name==='walk')||MINI.animations[0];
+  const a=mx.clipAction(walk); a.timeScale=1.7; a.play();
+  const x=side*(ARENA+1.2); g.position.set(x,0,.3);
+  const m={g,mx,x,y:0,vx:0,vy:0,state:'run',t:0,h:sz.y,bub:sprite(MINI_SAY[(Math.random()*MINI_SAY.length)|0],.45,'#f6f3ea'),bubT:1.2};
+  scene.add(m.bub); minions.push(m);
+}
+function koMinion(m,dir){
+  m.state='fly'; m.t=0; m.vx=dir*7; m.vy=8; combo++; comboT=1.6; maxCombo=Math.max(maxCombo,combo);
+  sfx('stomp'); burst(m.x,m.h*.6,6,5,sparkMat); toast('見習い、退散','good');
+  if(m.bub)scene.remove(m.bub); m.bub=sprite('すみません！',.45,'#f6f3ea'); scene.add(m.bub); m.bubT=1;
+  if(combo>=2){const c=$('#combo');c.textContent=combo+' HIT';c.classList.add('on')}
+}
+function updMinions(dt){
+  if(state==='fight'){minionT-=dt;if(minionT<=0){spawnMinion();minionT=E.phase===2?11+Math.random()*3:16+Math.random()*4}}
+  for(let i=minions.length-1;i>=0;i--){
+    const m=minions[i]; m.t+=dt; m.mx.update(dt);
+    const dir=P.x>m.x?1:-1;
+    if(m.state==='run'){
+      m.x+=dir*(E.phase===2?4.2:3.4)*dt; m.g.rotation.y=dir*1.1;
+      const near=Math.abs(P.x-m.x)<.85;
+      if(near&&P.vy<0&&P.y>m.h*.55&&P.y<m.h+.35){koMinion(m,dir*-1);P.vy=9.5;P.jumps=1;continue}
+      if(near&&P.y<m.h*.8){
+        if(P.atk>0){koMinion(m,-dir);P.atk=0;P.vx=-P.face*3;continue}
+        hurtPlayer(8,'見習いの小刀',-dir===0?1:dir); m.state='back'; m.t=0; m.vx=-dir*5;
+      }
+    }else if(m.state==='back'){
+      m.x+=m.vx*dt; m.vx*=1-Math.min(1,dt*3); if(m.t>.9){m.state='run';m.t=0}
+    }else if(m.state==='fly'){
+      m.vy-=20*dt; m.x+=m.vx*dt; m.y+=m.vy*dt; m.g.rotation.z+=dt*10*Math.sign(m.vx);
+      if(m.t>1.4){scene.remove(m.g);if(m.bub)scene.remove(m.bub);minions.splice(i,1);continue}
+    }
+    m.x=m.state==='fly'?m.x:clamp(m.x,-ARENA-1.2,ARENA+1.2);
+    m.g.position.set(m.x,m.y,.3);
+    if(m.bub){m.bubT-=dt;m.bub.position.set(m.x,m.y+m.h+.45,.5);if(m.bubT<=0){scene.remove(m.bub);m.bub=null}}
+  }
+}
+function clearMinions(){for(const m of minions){scene.remove(m.g);if(m.bub)scene.remove(m.bub)}minions.length=0;minionT=12}
 
 /* ---------- speech + fx ---------- */
 const texCache={};
@@ -402,7 +510,8 @@ function reset(){
   for(const d of dice){d.m.visible=false}
   for(const c of cuts)c.visible=false;
   it.hb.emissive.setHex(0x000000); it.root.rotation.set(0,0,0); it.knife.visible=true; it.g.visible=true;
-  tofu.visible=true; negi.visible=false; negiState='none'; negiT=14;
+  tofu.visible=true; negi.visible=false; negiState='none'; negiT=14; clearMinions();
+  if(robot){playA('Idle',{restart:true,fade:0});it.robWrap.rotation.set(0,0,0);if(it.robKnife)it.robKnife.visible=true}
   timeLeft=ROUND_T; fightT=0; combo=0; maxCombo=0; rainT=0; slowmo=1; lastHud='';
 }
 function start(){
@@ -515,15 +624,16 @@ function updEnemy(dt){
   E.t+=dt; E.flash-=dt;
   E.x+=E.kb*dt; E.kb*=1-Math.min(1,dt*6); E.x=clamp(E.x,-ARENA,ARENA);
   const d=Math.abs(P.x-E.x);
+  E.moving=0; E.tauntAnim=Math.max(0,(E.tauntAnim||0)-dt);
   if(E.state==='idle'){
     E.face=P.x>E.x?1:-1;
-    if(d>2.3)E.x+=E.face*E.spd*dt;
-    else if(d<1.6)E.x-=E.face*E.spd*.6*dt;
-    E.tauntT-=dt; if(E.tauntT<=0){say(TAUNT[(Math.random()*TAUNT.length)|0]);E.tauntT=7+Math.random()*4}
+    if(d>2.3){E.x+=E.face*E.spd*dt;E.moving=1}
+    else if(d<1.6){E.x-=E.face*E.spd*.6*dt;E.moving=-1}
+    E.tauntT-=dt; if(E.tauntT<=0){say(TAUNT[(Math.random()*TAUNT.length)|0]);E.tauntT=7+Math.random()*4;E.tauntAnim=1.6;E.tauntClip=Math.random()<.5?'No':'Wave'}
     if(E.t>=E.idleT)chooseAttack();
   }else if(E.state==='wind'){
     if(E.t>=atkTime('wind')){E.state='act';E.t=0;E.hitDone=false;
-      if(E.atkName==='nage'){throwKnives();it.knife.visible=false;sfx('swing')}
+      if(E.atkName==='nage'){throwKnives();it.knife.visible=false;if(it.robKnife)it.robKnife.visible=false;sfx('swing')}
       else{sfx('swing');const f=E.face;if(E.atkName==='tate')slashFx(E.x+f*1.5,1.7,f,true);else slashFx(E.x+f*1.6,E.atkName==='sen'?.9:.6,f,false)}}
   }else if(E.state==='act'){
     const A=ATK[E.atkName];
@@ -538,7 +648,7 @@ function updEnemy(dt){
       else{E.state='rec';E.t=0}
     }
   }else if(E.state==='rec'){
-    if(E.t>=atkTime('rec')){E.state='idle';E.t=0;E.idleT=E.phase===2?.35:.65;it.knife.visible=true}
+    if(E.t>=atkTime('rec')){E.state='idle';E.t=0;E.idleT=E.phase===2?.35:.65;it.knife.visible=true;if(it.robKnife)it.robKnife.visible=true}
   }else if(E.state==='hurt'){
     if(E.t>=.34){E.state='idle';E.t=0;E.idleT=.3}
   }
@@ -580,6 +690,7 @@ function ko(win,timeUp){
   if(state!=='fight')return;
   state='ko'; stT=0; slowmo=.3; bgmDuck(.2); combo=0; $('#combo').classList.remove('on');
   endInfo={win,timeUp,hp:Math.ceil(P.hp),t:fightT};
+  for(const m of minions)if(m.state!=='fly'){m.state='fly';m.t=0;m.vx=(m.x>0?1:-1)*5;m.vy=6}
   if(timeUp){banner('定時',false,1.6);sfx('gong')}
   else if(win){banner('一本！',false,1.6);sfx('ko');E.state='down';E.t=0;it.knife.visible=false;say('参った……')}
   else{
@@ -609,9 +720,36 @@ function showEnd(){
 
 /* ---------- visuals ---------- */
 const lerp=(a,b,k)=>a+(b-a)*k;
+function poseRobot(dt){
+  const w=it.robWrap, n=E.atkName, PEAK=.29, CHAMBER=.1;
+  let lean=0, bob=0;
+  if(E.state==='down'){playA('Death',{once:true,fade:.1});w.rotation.x*=1-Math.min(1,dt*6);return}
+  if(state==='ko'||state==='over'){ if(endInfo&&!endInfo.win){playA(endInfo.timeUp?'Yes':'ThumbsUp',{once:true,fade:.25})} else playA('Idle'); w.rotation.x*=1-Math.min(1,dt*6); return}
+  if(E.state==='wind'){
+    if(E.t<dt*1.5||curAct!==acts.Punch||acts.Punch.timeScale!==0)playA('Punch',{once:true,time:CHAMBER,ts:0,fade:.08});
+    lean=n==='tate'?-.22:-.1; w.position.x=Math.sin(E.t*60)*.03*Math.min(1,E.t/atkTime('wind'));
+    for(const m of robMats)m.emissive.setHex(0x000000);
+    it.blade.emissive.setHex(Math.floor(E.t*12)%2?0xc8372d:0x000000);
+  }else if(E.state==='act'){
+    if(E.t<dt*1.5||acts.Punch.timeScale===0)playA('Punch',{once:true,time:.17,ts:(PEAK-.17)/(atkTime('act')*.7),fade:.04});
+    lean=n==='tate'?.32:n==='nage'?.05:.12; it.blade.emissive.setHex(0x000000);
+  }else if(E.state==='rec'){
+    if(curAct===acts.Punch)acts.Punch.timeScale=1.1; lean=n==='tate'?.26:.06;
+  }else if(E.state==='hurt'){
+    lean=-.32; if(curAct===acts.Punch)playA('Idle',{fade:.1});
+  }else{
+    it.blade.emissive.setHex(0x000000);
+    if(E.tauntAnim>0)playA(E.tauntClip||'No',{once:true,fade:.2});
+    else playA(E.moving?'Walking':'Idle',{ts:E.moving<0?-.8:1.15,fade:.2});
+    w.position.x*=.8;
+  }
+  w.rotation.x+= (lean-w.rotation.x)*Math.min(1,dt*12);
+  for(const m of robMats)m.emissive.setHex(E.flash>0?0x666666:0x000000);
+}
 function poseItamae(dt){
   const g=it.g, f=E.face;
   g.position.x=E.x; g.rotation.y=f*1.0;
+  if(robot){mixer.update(dt);poseRobot(dt);return}
   const k=Math.min(1,dt*14), n=E.atkName;
   let sx=-.55+Math.sin(clock.elapsedTime*3)*.06, sy=.2, lean=0;
   if(E.state==='wind'){
@@ -668,11 +806,11 @@ function frame(){
   }
   if(state==='fight'){
     fightT+=dt; timeLeft=Math.max(0,ROUND_T-fightT);
-    updPlayer(dt); updEnemy(dt); updKnives(dt); updNegi(dt);
+    updPlayer(dt); updEnemy(dt); updKnives(dt); updNegi(dt); updMinions(dt);
     if(timeLeft<=0)ko(P.hp/100>=E.hp/100,true);
     hud();
   }else if(state==='ko'){
-    updPlayer(dt); updKnives(dt);
+    updPlayer(dt); updKnives(dt); updMinions(dt);
     slowmo=Math.min(1,slowmo+raw*.5);
     if(stT>2.4){showEnd()}
     hud();
@@ -692,14 +830,18 @@ function frame(){
   if(bannerT>0){bannerT-=raw;if(bannerT<=0)$('#banner').className='banner'}
   // camera frames both fighters
   const mid=clamp((P.x+E.x)/2,-ARENA+2.5,ARENA-2.5), sep=Math.abs(P.x-E.x);
-  const want=clamp(9+sep*.75,11,17)*(portrait?1.55:1);
+  const vf=camera.fov*Math.PI/180, hf=2*Math.atan(Math.tan(vf/2)*camera.aspect);
+  const want=clamp(Math.max(12.5,(sep/2+2.1)/Math.tan(hf/2),3.4/Math.tan(vf/2)),12.5,42);
   camX+=(mid-camX)*Math.min(1,raw*4); camD+=(want-camD)*Math.min(1,raw*3);
+  scene.fog.near=camD+8; scene.fog.far=camD+34;
   shake=Math.max(0,shake-raw); const sk=shake*shake*1.2;
-  camera.position.set(camX+(Math.random()-.5)*sk,3+(portrait?1:0)+(Math.random()-.5)*sk,camD);
-  camera.lookAt(camX,1.5+(portrait?.6:0),0);
+  camera.position.set(camX+(Math.random()-.5)*sk,3+(portrait?2.4:0)+(Math.random()-.5)*sk,camD);
+  camera.lookAt(camX,1.5+(portrait?2.4:0),0);
   renderer.render(scene,camera);
 }
 reset(); frame();
+loadChars().then(()=>{const b=$('#startBtn');b.disabled=false;b.textContent='まな板に上がる'});
+if(location.hash==='#dbg')window.__dbg={P,E,it,start,get state(){return state},set state(v){state=v},spawnMinion,minions,hitEnemy,acts:()=>acts,chooseAttack,ATK,setAtk:(n)=>{E.atkName=n;E.state='wind';E.t=0;E.hitDone=false;E.chainLeft=ATK[n].chain||0}};
 })();
 </script>
 </body>

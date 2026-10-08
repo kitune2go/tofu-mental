@@ -19,7 +19,7 @@
 - **2面 帰り道**（`stage2.html`）：17:00〜19:00。着信ドローン・崩れる足場・積み上がる用事（レンガ）・ドブ。小銭でメンタル少し回復。1面クリア時の残りメンタルを引き継げます。
 - **EX 言い返し**（`fps.html`）：FPSモード。タップした場所に豆腐ブラスターを撃ち、迫る言葉と着信ドローンを撃ち落とす。60秒耐えると部長ドローン戦。
 - **EX2 宇宙まで逃げた**（`space.html`）：宇宙シューティング。ドラッグで豆腐号を操縦（弾は自動）。タスク隕石・通知衛星をかわして月へ。60秒で本社衛星戦。
-- **EX3 まな板の上**（`fight.html`）：格闘モード。包丁を持った板前と1対1。体当たり・頭踏み・高野豆腐ガードで戦う。体力半分で板前が本気になり、千切り連打と包丁の雨が加わる。
+- **EX3 まな板の上**（`fight.html`）：格闘モード。包丁を持った板前ロボと1対1。ときどき見習いも走ってくる。体当たり・頭踏み・高野豆腐ガードで戦う。体力半分で板前が本気になり、千切り連打と包丁の雨が加わる。
 
 ## ルール（1面）
 
@@ -35,4 +35,6 @@
 - ゲーム制作：AKIHIRO（Claude と共同制作）
 - BGM（`bgm.mp3`）：AKIHIRO が Suno で生成。BGM はリポジトリ内のコードとは別扱いで、再配布・転用はご遠慮ください。
 - 2面の3Dモデル（`models/`）：[Kenney](https://kenney.nl/) の Starter Kit（3D Platformer / City Builder / FPS）より。CC0 ライセンス。
+- EX3の板前（`models/chars/robot.glb`）：RobotExpressive（作者 Tomás Laulhé / Quaternius、改変 Don McCurdy）。CC0 ライセンス。白衣の色・はちまき・包丁を追加。
+- EX3の見習い（`models/chars/kenney-character.glb`）：Kenney Starter Kit 3D Platformer より。CC0 ライセンス。
 - 3D 描画：[three.js](https://threejs.org/) r128
