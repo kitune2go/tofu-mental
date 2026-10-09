@@ -126,8 +126,9 @@ h1 .st{display:block;font-size:clamp(18px,5vw,26px);color:var(--aurora);margin-t
       <b>凍結（60%〜）</b><span>重くて遅い。氷の壁を割れる。クマも言葉も跳ね返す</span>
       <b>スポンジ</b><span>一度解けたら二度と生に戻らない。軽くてよく跳ぶ</span>
       <b>薄氷</b><span>凍った重い豆腐が乗ると割れる</span>
-      <b>焚き火・カイロ</b><span>解凍する。保冷剤は凍結を進める</span>
-      <b>凍結100%</b><span>冷凍保存されて終わり</span>
+      <b>焚き火・カイロ</b><span>解凍する。保冷剤で一気に凍結。氷の壁に触れていても凍っていく</span>
+      <b>凍結100%</b><span>凍えてメンタルが削れていく。焚き火へ急げ</span>
+      <b>焚き火</b><span>通るとそこから再開できる</span>
     </div>
     <div class="btns">
       <button class="btn" id="startBtn" type="button">上陸する</button>
@@ -145,7 +146,8 @@ h1 .st{display:block;font-size:clamp(18px,5vw,26px);color:var(--aurora);margin-t
     <p class="lead" id="endLead"></p>
     <div class="result" id="endResult"></div>
     <div class="btns">
-      <button class="btn" id="retryBtn" type="button">もう一度上陸</button>
+      <button class="btn" id="resumeBtn" type="button">焚き火から再開</button>
+      <button class="ghost" id="retryBtn" type="button">最初から</button>
       <a class="ghost" id="shareBtn" href="#" target="_blank" rel="noopener">Xでシェア</a>
       <a class="ghost" href="./">1面へ</a>
     </div>
@@ -161,7 +163,7 @@ const GOAL=232;
 const FREEZE_AT=60, THAW_AT=35;
 const PHYS={
   soft:  {spd:6.2,jv:11.2,g:32,dbl:true, acc:14,label:'物性：生',cls:''},
-  frozen:{spd:4.6,jv:8.8, g:38,dbl:false,acc:3.2,label:'物性：凍結（鈍器）',cls:'frozen'},
+  frozen:{spd:5.0,jv:9.8, g:34,dbl:false,acc:3.6,label:'物性：凍結（鈍器）',cls:'frozen'},
   sponge:{spd:6.0,jv:13.4,g:24,dbl:true, acc:12,label:'物性：スポンジ',cls:'sponge'},
 };
 
@@ -253,8 +255,8 @@ function addFire(x){
 function addBlizzard(x0,x1){blizzards.push({x0,x1})}
 function labelTex(t,bg,fg){return ctex(256,96,(g,w,h)=>{g.fillStyle=bg;g.fillRect(0,0,w,h);g.fillStyle=fg;g.font='bold 40px "M PLUS 1 Code","Hiragino Sans",sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText(t,w/2,h/2+2)})}
 const ITEM={
-  cold:{freeze:+38,label:'保冷剤で凍結を進めた',tex:labelTex('保冷剤','#3f8fd8','#ffffff'),col:0x3f8fd8,cls:'ice'},
-  kairo:{freeze:-45,label:'カイロで解凍',tex:labelTex('カイロ','#ffffff','#e5483c'),col:0xf3f0e8,cls:'sp'},
+  cold:{set:'up',freeze:62,label:'保冷剤で凍結を進めた',tex:labelTex('保冷剤','#3f8fd8','#ffffff'),col:0x3f8fd8,cls:'ice'},
+  kairo:{set:'down',freeze:18,label:'カイロで解凍',tex:labelTex('カイロ','#ffffff','#e5483c'),col:0xf3f0e8,cls:'sp'},
   tea:{freeze:-18,mental:+14,label:'ホットお茶　メンタル＋14',tex:labelTex('お茶','#5fae4e','#ffffff'),col:0x5fae4e,cls:'good'},
 };
 function addItem(kind,x,y){
@@ -288,14 +290,14 @@ function buildLevel(){
   addFire(35); addSign(33,'焚き火で解凍。一度凍ると、もう生には戻らない'); addSign(38.6,'薄氷：重い鈍器が乗ると割れる');
   addThin(40,48);
   addSeg(48,70); addBear(52,68); addItem('tea',58,2.6);
-  addWater(70,73.2);
-  addSeg(73.2,104); addBlizzard(76,96); addSign(75,'この先、吹雪'); addWall(97); addItem('kairo',99.5,1.1); addFire(102);
+  addWater(70,72.4);
+  addSeg(72.4,104); addBlizzard(76,96); addSign(75,'この先、吹雪'); addWall(97); addItem('kairo',99.5,1.1); addFire(102);
   addThin(104,114);
-  addSeg(114,150); addBear(118,127); addBear(130,140); addItem('cold',137,1.1); addWall(145); addItem('kairo',148,1.1);
+  addSeg(114,150); addItem('tea',116,1.1); addBear(118,127); addBear(130,140); addItem('cold',137,1.1); addWall(145); addItem('kairo',148,1.1);
   addThin(150,158);
   addSeg(158,185); addBlizzard(164,186); addBear(168,182); addItem('tea',176,2.6);
-  addWater(185,188.2);
-  addSeg(188.2,205); addItem('cold',192,1.1); addWall(200); addFire(203.5);
+  addWater(185,187.4);
+  addSeg(187.4,205); addItem('tea',190,1.1); addItem('cold',194,1.1); addWall(200); addFire(203.5);
   addThin(205,212);
   addSeg(212,GOAL+24); addBear(218,229); addItem('tea',215,1.1);
   // north pole
@@ -409,7 +411,7 @@ const LK=['ArrowLeft','KeyA'],RK=['ArrowRight','KeyD'],JK=['Space','ArrowUp','Ke
 addEventListener('keydown',e=>{
   if(LK.includes(e.code))K.l=true; if(RK.includes(e.code))K.r=true;
   if(JK.includes(e.code)){e.preventDefault();if(!e.repeat)jumpQ=.15}
-  if((e.code==='Enter'||e.code==='Space')&&(state==='title'||state==='over')&&!e.repeat){e.preventDefault();start()}
+  if((e.code==='Enter'||e.code==='Space')&&(state==='title'||state==='over')&&!e.repeat){e.preventDefault();state==='over'&&cp&&!$('#resumeBtn').hidden?resume():start()}
 });
 addEventListener('keyup',e=>{if(LK.includes(e.code))K.l=false;if(RK.includes(e.code))K.r=false});
 function hold(id,on,off){const b=$(id);
@@ -423,7 +425,7 @@ addEventListener('blur',()=>{K.l=K.r=false});
 
 /* ---------- state ---------- */
 const P={};
-let state='title',playT=0,wordT=6,shake=0,camX=0,camY=2,inBliz=false,stats={frozen:0,thawed:0,walls:0,bears:0};
+let cp=null,cpHint=false,state='title',playT=0,wordT=6,shake=0,camX=0,camY=2,inBliz=false,stats={frozen:0,thawed:0,walls:0,bears:0};
 function resetPlayer(){Object.assign(P,{x:0,y:0,vx:0,vy:0,ground:true,coyote:0,jumps:0,mental:100,freeze:0,st:'soft',inv:0,sq:1,sqV:0,tilt:0,blink:2,on:null,dead:false})}
 function resetLevel(){
   for(const w of walls){w.alive=true;w.g.visible=true}
@@ -436,12 +438,28 @@ function resetLevel(){
 function start(){
   if(!ac){try{ac=new (window.AudioContext||window.webkitAudioContext)()}catch(e){}}
   if(ac&&ac.state==='suspended')ac.resume();
-  resetPlayer(); resetLevel(); playT=0; wordT=6; camX=P.x+2.5; lastHud=''; tofu.visible=true;
+  resetPlayer(); resetLevel(); cp=null; playT=0; wordT=6; camX=P.x+2.5; lastHud=''; tofu.visible=true;
   $('#ovTitle').hidden=true; $('#ovEnd').hidden=true;
   bgmPlay(); state='play'; toast('上陸。豆腐は、だんだん凍っていく','');
 }
 $('#startBtn').addEventListener('click',start);
 $('#retryBtn').addEventListener('click',start);
+function resume(){
+  if(!cp){start();return}
+  if(!ac){try{ac=new (window.AudioContext||window.webkitAudioContext)()}catch(e){}}
+  if(ac&&ac.state==='suspended')ac.resume();
+  const keepT=playT, keepStats=Object.assign({},stats), cx=cp.x;
+  resetPlayer();
+  for(const w of walls)if(w.x0>cx){w.alive=true;w.g.visible=true}
+  for(const t of thins)if(t.x0>cx){t.alive=true;t.t=0;t.crack.material.opacity=0;t.pieces.forEach(p=>{p.visible=true;p.position.y=-.07;p.rotation.set(0,0,0);p.userData.vy=0})}
+  for(const b of bears)if(b.x0>cx){b.state='walk';b.x=(b.x0+b.x1)/2;b.y=0;b.g.visible=true;b.g.rotation.set(0,0,0)}
+  for(const it of items)if(it.x>cx){it.taken=false;it.g.visible=true}
+  clearWords(); stats=keepStats; stats.retries=(stats.retries||0)+1;
+  P.x=cx+.6; P.st=cp.st; P.freeze=10; P.mental=Math.max(70,P.mental);
+  playT=keepT; wordT=4; camX=P.x+2.5; lastHud=''; tofu.visible=true;
+  $('#ovEnd').hidden=true; bgmDuck(.5); state='play'; toast('焚き火から再開','good');
+}
+$('#resumeBtn').addEventListener('click',resume);
 
 function setState(st){
   if(P.st===st)return;
@@ -451,7 +469,7 @@ function setState(st){
 }
 function hurt(n,label){
   if(P.inv>0||state!=='play')return false;
-  if(P.st==='sponge')n=Math.round(n*1.3);
+  if(P.st==='sponge')n=Math.round(n*1.15);
   P.mental=Math.max(0,P.mental-n); P.inv=1.0; shake=.5; flash(); sfx('hit');
   toast(label+'　−'+n,'bad'); burst(P.x,P.y+.6,6,4,P.st==='sponge'?spongeMat:tofuMat,crumbGeo); P.sq=.6;
   if(P.mental<=0)die('崩壊','崩れた','物性がどうであれ、メンタルは豆腐のままだった。');
@@ -467,12 +485,13 @@ function endScreen(kicker,title,lead,win){
   state='over';
   $('#endKicker').textContent=kicker; $('#endTitle').textContent=title; $('#endLead').textContent=lead;
   const d=Math.max(0,Math.ceil(GOAL-P.x));
-  const stLine=`凍結 <b>${stats.frozen}</b> 回　解凍 <b>${stats.thawed}</b> 回　割った壁 <b>${stats.walls}</b>　はじいたクマ <b>${stats.bears}</b>`;
+  const stLine=(stats.retries?`再開 <b>${stats.retries}</b> 回　`:'')+`凍結 <b>${stats.frozen}</b> 回　解凍 <b>${stats.thawed}</b> 回　割った壁 <b>${stats.walls}</b>　はじいたクマ <b>${stats.bears}</b>`;
   if(win){
     const best=getBest(),nb=!best||playT<best; if(nb)setBest(playT);
     $('#endResult').innerHTML=`所要 <b>${playT.toFixed(1)} 秒</b>${nb?'（自己ベスト）':''}　残りメンタル <b>${Math.ceil(P.mental)}</b><br>${stLine}`;
-    $('#retryBtn').textContent='もう一度上陸';
+    $('#retryBtn').textContent='もう一度上陸';$('#resumeBtn').hidden=true;
   }else{
+    $('#resumeBtn').hidden=!cp; $('#retryBtn').textContent=cp?'最初から':'もう一度上陸';
     $('#endResult').innerHTML=`北極点まであと <b>${d} m</b><br>${stLine}`;
   }
   const txt=win?`北極点に到達！\n称号【${title}】\n凍結${stats.frozen}回・解凍${stats.thawed}回・${playT.toFixed(1)}秒\n物性は変わった。メンタルは変わっていない。\n#すり潰されて豆腐メンタル`:`北極で……${title}\n北極点まであと${d}m\n#すり潰されて豆腐メンタル`;
@@ -496,13 +515,14 @@ function update(dt){
   const ph=PHYS[P.st], hw=.45, h=1;
   // environment: freeze
   inBliz=blizzards.some(b=>P.x>b.x0&&P.x<b.x1);
-  let df=2.4+(inBliz?9:0);
+  let df=1.7+(inBliz?(P.st==='frozen'?2.5:5):0);
   let nearFire=false;
-  for(const f of fires)if(Math.abs(P.x-f.x)<2.2&&P.y<2){df=-32;nearFire=true}
+  for(const w of walls)if(w.alive&&Math.abs(P.x-(w.x0+w.x1)/2)<1.1)df+=10;
+  for(const f of fires)if(Math.abs(P.x-f.x)<2.4&&P.y<2.5){df=-80;nearFire=true;if(!cp||cp.x<f.x){cp={x:f.x,st:P.st==='soft'&&P.freeze<FREEZE_AT?'soft':'sponge'};if(!cpHint){cpHint=true;toast('焚き火：ここから再開できる','good')}}}
   P.freeze=Math.max(0,Math.min(100,P.freeze+df*dt));
   if(P.st!=='frozen'&&P.freeze>=FREEZE_AT)setState('frozen');
   else if(P.st==='frozen'&&P.freeze<THAW_AT)setState('sponge');
-  if(P.freeze>=100){die('冷凍保存','冷凍保存された','完全に凍った。北極では、それは保存と呼ばれる。');return}
+  if(P.freeze>=100){P.mental=Math.max(0,P.mental-6*dt);if(!P.coldMsg||playT-P.coldMsg>3){P.coldMsg=playT;toast('凍えて削れていく……温まれ','bad')}if(P.mental<=0){die('冷凍保存','冷凍保存された','完全に凍った。北極では、それは保存と呼ばれる。');return}}
   // move
   const dir=(K.r?1:0)-(K.l?1:0);
   const wind=inBliz?-1.6:0;
@@ -530,8 +550,10 @@ function update(dt){
   // thin ice under a frozen tofu
   if(P.on&&P.on.pieces){
     const t=P.on;
-    if(P.st==='frozen'){t.t+=dt;t.crack.material.opacity=Math.min(.9,t.t*3);if(t.t>.05&&t.t-dt<=.05)sfx('crack');if(t.t>.35){t.alive=false;sfx('crack');shake=.3;t.pieces.forEach(p=>p.userData.vy=-1-Math.random()*2);toast('薄氷が割れた！','bad')}}
+    if(P.st==='frozen'){t.t+=dt;t.crack.material.opacity=Math.min(.9,t.t*1.2);if(t.t>.05&&t.t-dt<=.05){sfx('crack');toast('ピシッ……重すぎる！戻れ！','bad')}if(t.t>.9){t.alive=false;sfx('crack');shake=.3;t.pieces.forEach(p=>p.userData.vy=-1-Math.random()*2);toast('薄氷が割れた！','bad')}}
   }
+  if(P.st==='frozen'&&!P.thinWarn){const th=thins.find(t=>t.alive&&t.x0>P.x&&t.x0-P.x<3.5);if(th){P.thinWarn=true;toast('凍ったまま薄氷に乗ると割れる','ice')}}
+  if(P.st!=='frozen')P.thinWarn=false;
   if(P.y<-1.2){
     sfx('splash');
     die('落水',P.st==='sponge'?'海水を吸って沈んだ':P.st==='frozen'?'鈍器のまま沈んだ':'北極海に沈んだ',P.st==='sponge'?'スポンジは、よく吸う。北極海の水も、よく吸う。':'北極海は冷たい。豆腐には、少し深すぎた。');
@@ -542,7 +564,7 @@ function update(dt){
     if(it.taken)continue;
     if(Math.abs(it.x-P.x)<.7&&Math.abs(it.y-(P.y+.5))<.9){
       it.taken=true;it.g.visible=false;const d=ITEM[it.kind];
-      P.freeze=Math.max(0,Math.min(100,P.freeze+d.freeze)); if(d.mental)P.mental=Math.min(100,P.mental+d.mental);
+      P.freeze=d.set==='up'?Math.max(P.freeze,d.freeze):d.set==='down'?Math.min(P.freeze,d.freeze):Math.max(0,Math.min(100,P.freeze+d.freeze)); if(d.mental)P.mental=Math.min(100,P.mental+d.mental);
       sfx('item'); toast(d.label,d.cls);
       if(P.st!=='frozen'&&P.freeze>=FREEZE_AT)setState('frozen'); else if(P.st==='frozen'&&P.freeze<THAW_AT)setState('sponge');
     }
@@ -553,7 +575,7 @@ function update(dt){
       b.x+=b.dir*1.5*dt; if(b.x>b.x1){b.x=b.x1;b.dir=-1} if(b.x<b.x0){b.x=b.x0;b.dir=1}
       if(Math.abs(P.x-b.x)<1.5&&P.y<1.9){
         if(P.st==='frozen'){b.state='fly';b.t=0;b.vx=(b.x>P.x?1:-1)*7;b.vy=9;stats.bears++;sfx('smash');shake=.4;toast('クマ、はじき飛ばされる','ice');P.vx*=.4}
-        else if(hurt(20,'クマにじゃれつかれた')){P.vx=(P.x<b.x?-1:1)*7;P.vy=6;P.ground=false}
+        else if(hurt(14,'クマにじゃれつかれた')){P.vx=(P.x<b.x?-1:1)*7;P.vy=6;P.ground=false}
       }
     }else if(b.state==='fly'){
       b.t+=dt;b.vy-=20*dt;b.x+=b.vx*dt;b.y+=b.vy*dt;b.g.rotation.z+=dt*6*Math.sign(-b.vx);if(b.t>2){b.state='gone';b.g.visible=false}
@@ -567,7 +589,7 @@ function update(dt){
     const sx=p.s.position.x,sy=p.s.position.y;
     if(Math.abs(sx-P.x)<p.hw+hw*.8&&sy+p.hh>P.y&&sy-p.hh<P.y+h){
       if(P.st==='frozen'){burst(sx,sy,8,4);sfx('smash');scene.remove(p.s);projs.splice(i,1);continue}
-      if(hurt(12,'「'+p.t+'」')){scene.remove(p.s);projs.splice(i,1);continue}
+      if(hurt(10,'「'+p.t+'」')){scene.remove(p.s);projs.splice(i,1);continue}
     }
     if(sx<P.x-22){scene.remove(p.s);projs.splice(i,1)}
   }
@@ -618,7 +640,15 @@ function frame(){
   renderer.render(scene,camera);
 }
 buildLevel(); resetPlayer(); hud(); frame();
-if(location.hash==='#dbg')window.__dbg={P,start,get state(){return state},walls,thins,bears,setState,snap:()=>{camX=P.x+2.5;camY=2},tofu,step:(n,k)=>{Object.assign(K,k||{});for(let i=0;i<n&&state==='play';i++)update(1/30);Object.assign(K,{l:false,r:false})}};
+if(location.hash==='#dbg')window.__dbg={P,start,get state(){return state},walls,thins,bears,setState,snap:()=>{camX=P.x+2.5;camY=2},tofu,bot:(sec)=>{const dt=1/30,log=[];let last='';for(let i=0;i<sec*30&&state==='play';i++){K.r=true;K.l=false;
+  const nextGap=segs.find(s=>s.x1>P.x&&s.x1-P.x<1.1&&!thins.some(t=>t.alive&&Math.abs(t.x0-s.x1)<.1&&P.st!=='frozen'));
+  const bearNear=bears.find(b=>b.state==='walk'&&b.x>P.x&&b.x-P.x<2.6&&P.st!=='frozen');
+  const wordNear=projs.find(p=>p.s.position.x>P.x&&p.s.position.x-P.x<2.2&&p.s.position.y<1.4&&P.st!=='frozen');
+  if((nextGap||bearNear||wordNear)&&P.ground)jumpQ=.15;
+  if(!P.ground&&P.vy<0&&P.jumps<2&&(bearNear||nextGap))jumpQ=.15;
+  update(dt);const k=P.st;if(k!==last){log.push(k+'@'+P.x.toFixed(0)+' f'+P.freeze.toFixed(0)+' m'+P.mental);last=k}}
+  return {x:+P.x.toFixed(1),m:P.mental,f:+P.freeze.toFixed(0),st:P.st,state,t:+playT.toFixed(1),title:document.querySelector('#endTitle').textContent,log}},
+step:(n,k)=>{Object.assign(K,k||{});for(let i=0;i<n&&state==='play';i++)update(1/30);Object.assign(K,{l:false,r:false})}};
 })();
 </script>
 </body>
