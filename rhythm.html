@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="流れてくる豆腐をプレスラインで叩く。BGM『定時まで豆腐』に合わせた4レーン音ゲー。">
+<meta property="og:type" content="website">
+<meta property="og:title" content="すり潰されて豆腐メンタル EX5 定時まで豆腐（音ゲー）">
+<meta property="og:description" content="ヨシ！で叩いて、17:00まで形を保て。">
+<meta property="og:url" content="https://tofu-mental-seven.vercel.app/rhythm.html">
+<meta property="og:image" content="https://tofu-mental-seven.vercel.app/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<title>すり潰されて豆腐メンタル EX5 定時まで豆腐</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=DotGothic16&family=Zen+Kaku+Gothic+New:wght@500;700&display=swap">
+<style>
+/* Layout: one-screen factory line. Status panel on top, conveyor lanes below, press line near the bottom. Single dark look on purpose (night-lit production floor). */
+:root{
+  --steel:#1b1d1f; --steel-2:#26292c; --steel-3:#33373b;
+  --tofu:#f4f0e4; --tofu-shade:#d9d2bd;
+  --hazard:#f2c230; --ink:#e8e6df; --dim:#9a9c98;
+  --ok:#5fd38a; --warn:#f2c230; --bad:#ff5a4e;
+  --display:"Dela Gothic One","Hiragino Sans","Noto Sans JP",sans-serif;
+  --led:"DotGothic16","Osaka-Mono",monospace;
+  --body:"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%}
+[hidden]{display:none!important}
+body{background:var(--steel);color:var(--ink);font-family:var(--body);overflow:hidden;touch-action:manipulation;-webkit-user-select:none;user-select:none}
+#app{height:100%;display:flex;flex-direction:column;max-width:560px;margin:0 auto;padding-inline:16px;box-sizing:border-box}
+header{display:grid;grid-template-columns:1fr auto;gap:6px 12px;padding-block:10px 8px;align-items:center}
+.ttl{font-family:var(--display);font-size:1.15rem;letter-spacing:.02em;line-height:1.1;min-width:0}
+.ttl small{display:block;font-family:var(--led);font-size:.7rem;color:var(--dim);letter-spacing:.12em}
+.clock{font-family:var(--led);font-size:1.6rem;color:var(--hazard);font-variant-numeric:tabular-nums;text-align:right;line-height:1}
+.clock small{display:block;font-size:.62rem;color:var(--dim);letter-spacing:.1em}
+.gauge{grid-column:1/-1;display:flex;align-items:center;gap:8px;font-family:var(--led);font-size:.75rem;color:var(--dim)}
+.bar{flex:1;height:10px;background:var(--steel-3);border-radius:2px;overflow:hidden}
+.bar i{display:block;height:100%;width:100%;background:var(--ok);transition:width .15s,background .3s}
+#form{min-width:4.5em;text-align:right;color:var(--tofu)}
+.stage{position:relative;flex:1;min-height:0;border-radius:6px;overflow:hidden;background:var(--steel-2)}
+canvas{display:block;width:100%;height:100%}
+.hud{position:absolute;left:0;right:0;top:12px;display:flex;justify-content:space-between;padding-inline:12px;font-family:var(--led);font-variant-numeric:tabular-nums;pointer-events:none}
+.hud b{font-size:1.1rem;color:var(--tofu);font-weight:400}
+.hud span{font-size:.65rem;color:var(--dim);display:block;letter-spacing:.1em}
+#pauseBtn{position:absolute;right:10px;bottom:10px;font-family:var(--led);background:var(--steel-3);color:var(--ink);border:0;border-radius:4px;padding:6px 10px;font-size:.8rem;cursor:pointer}
+.overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:20px;background:rgba(20,21,23,.9);text-align:center;overflow:auto}
+.overlay h2{font-family:var(--display);font-size:clamp(1.6rem,7vw,2.4rem);margin:0;line-height:1.15;text-wrap:balance}
+.overlay p{margin:0;color:var(--dim);font-size:.9rem;line-height:1.6;max-width:30em}
+.cover{width:88px;height:88px;border-radius:6px;object-fit:cover;box-shadow:0 0 0 3px var(--steel-3)}
+.row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.opt{font-family:var(--led);background:var(--steel-3);color:var(--ink);border:2px solid transparent;border-radius:4px;padding:8px 12px;font-size:.9rem;cursor:pointer;min-width:5.5em}
+.opt small{display:block;font-size:.65rem;color:var(--dim)}
+.opt[aria-pressed="true"]{border-color:var(--hazard);color:var(--hazard)}
+.start{font-family:var(--display);font-size:1.25rem;background:var(--hazard);color:#1b1d1f;border:0;border-radius:4px;padding:12px 28px;cursor:pointer;box-shadow:0 4px 0 #a9851c}
+.start:active{transform:translateY(2px);box-shadow:0 2px 0 #a9851c}
+button:focus-visible{outline:2px solid var(--tofu);outline-offset:2px}
+.set{display:grid;grid-template-columns:auto 1fr auto;gap:6px 10px;align-items:center;font-family:var(--led);font-size:.8rem;color:var(--dim);width:min(100%,300px)}
+.set input{width:100%;accent-color:var(--hazard)}
+.set output{color:var(--ink);min-width:4em;text-align:right;font-variant-numeric:tabular-nums}
+.keys{font-family:var(--led);font-size:.75rem;color:var(--dim)}
+.keys kbd{font-family:inherit;border:1px solid var(--steel-3);border-radius:3px;padding:1px 6px;color:var(--ink)}
+.stamp{font-family:var(--display);font-size:clamp(2.2rem,11vw,3.4rem);color:var(--bad);border:4px solid currentColor;border-radius:8px;padding:2px 16px;transform:rotate(-8deg);line-height:1.1}
+.stamp.good{color:var(--hazard)}
+.res{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;width:min(100%,340px);font-family:var(--led)}
+.res div{background:var(--steel-3);border-radius:4px;padding:6px 2px}
+.res b{display:block;font-weight:400;font-size:1.1rem;color:var(--tofu);font-variant-numeric:tabular-nums}
+.res span{font-size:.62rem;color:var(--dim)}
+.score{font-family:var(--led);font-size:2rem;color:var(--tofu);font-variant-numeric:tabular-nums}
+.loading{font-family:var(--led);color:var(--hazard)}
+footer{font-family:var(--led);font-size:.62rem;color:var(--dim);padding-block:6px 8px;text-align:center;letter-spacing:.08em}
+@media (prefers-reduced-motion:reduce){.bar i{transition:none}}
+</style>
+</head>
+<body>
+
+
+<div id="app">
+  <header>
+    <div class="ttl">定時まで豆腐<small>BREEZYLIED196 · 143.6 BPM</small></div>
+    <div class="clock"><span id="clock">08:00</span><small>退勤 17:00</small></div>
+    <div class="gauge">メンタル残量<div class="bar"><i id="gbar"></i></div><span id="form">木綿</span></div>
+  </header>
+  <div class="stage" id="stage">
+    <canvas id="cv"></canvas>
+    <div class="hud"><div><span>SCORE</span><b id="score">0</b></div><div style="text-align:right"><span>COMBO</span><b id="combo">0</b></div></div>
+    <button id="pauseBtn" hidden>一時停止</button>
+
+    <div class="overlay" id="title">
+      
+      <h2>定時まで豆腐</h2>
+      <p>流れてくる豆腐をプレスラインでタップ。ミスるとメンタルが削れて、ゼロになるとおから。17:00まで形を保てば退勤です。</p>
+      <div class="row" id="diffs">
+        <button class="opt" data-d="easy" aria-pressed="false">木綿<small>EASY</small></button>
+        <button class="opt" data-d="normal" aria-pressed="true">絹ごし<small>NORMAL</small></button>
+        <button class="opt" data-d="hard" aria-pressed="false">おぼろ<small>HARD</small></button>
+      </div>
+      <div class="set">
+        <label for="spd">速さ</label><input id="spd" type="range" min="1" max="4" step="0.25" value="2"><output id="spdv">2.00x</output>
+        <label for="ofs">ズレ補正</label><input id="ofs" type="range" min="-200" max="200" step="5" value="0"><output id="ofsv">0ms</output>
+      </div>
+      <button class="start" id="startBtn" disabled><span class="loading">音源ロード中…</span></button>
+      <div class="keys">PC：<kbd>D</kbd><kbd>F</kbd><kbd>J</kbd><kbd>K</kbd>　スマホ：レーンをタップ　<kbd>Esc</kbd>で一時停止</div>
+    </div>
+
+    <div class="overlay" id="pauseOv" hidden>
+      <h2>休憩時間</h2>
+      <p>休憩時間は、どこ行った！</p>
+      <div class="row"><button class="start" id="resumeBtn">再開</button><button class="opt" id="quitBtn">やめる</button></div>
+    </div>
+
+    <div class="overlay" id="result" hidden>
+      <div class="stamp" id="stamp">退勤！</div>
+      <p id="resMsg"></p>
+      <div class="score" id="resScore">0</div>
+      <div class="res">
+        <div><b id="rP">0</b><span>ヨシ！</span></div>
+        <div><b id="rG">0</b><span>まあヨシ</span></div>
+        <div><b id="rM">0</b><span>ヨシじゃない</span></div>
+        <div><b id="rC">0</b><span>最大コンボ</span></div>
+      </div>
+      <p id="best"></p>
+      <div class="row"><button class="start" id="againBtn">翌日も出勤</button><button class="opt" id="menuBtn">メニュー</button></div>
+    </div>
+  </div>
+  <footer><a href="index.html" style="color:inherit">← 1面・ステージ選択へ</a>　ご安全に！</footer>
+</div>
+
+<script>
+const DATA={"bpm":143.562,"offset":0.0347,"duration":140.72,"charts":{"easy":[{"t":1.288,"l":1},{"t":2.542,"l":1},{"t":2.96,"l":2},{"t":4.214,"l":2},{"t":4.632,"l":3},{"t":5.05,"l":1},{"t":5.468,"l":0},{"t":5.886,"l":1},{"t":6.304,"l":0},{"t":6.722,"l":1},{"t":7.975,"l":1},{"t":10.692,"l":3},{"t":11.11,"l":1},{"t":11.528,"l":2},{"t":12.155,"l":1},{"t":12.782,"l":2},{"t":14.036,"l":3},{"t":14.453,"l":2},{"t":15.498,"l":0},{"t":15.916,"l":0},{"t":17.17,"l":2},{"t":17.588,"l":0},{"t":18.006,"l":3},{"t":18.424,"l":2},{"t":18.842,"l":1},{"t":19.26,"l":0},{"t":19.678,"l":3},{"t":20.514,"l":1},{"t":20.932,"l":1},{"t":21.349,"l":2},{"t":21.767,"l":1},{"t":22.185,"l":2},{"t":23.857,"l":2},{"t":24.693,"l":3},{"t":25.111,"l":0},{"t":25.529,"l":0},{"t":26.156,"l":3},{"t":26.574,"l":2},{"t":27.201,"l":2},{"t":27.619,"l":1},{"t":28.036,"l":1},{"t":28.454,"l":3},{"t":28.872,"l":1},{"t":29.29,"l":0},{"t":29.708,"l":0},{"t":33.47,"l":3},{"t":33.888,"l":1},{"t":34.305,"l":3},{"t":34.723,"l":2},{"t":35.141,"l":2},{"t":35.559,"l":0},{"t":35.977,"l":1},{"t":36.395,"l":0},{"t":36.813,"l":2},{"t":37.231,"l":0},{"t":37.649,"l":2},{"t":38.067,"l":0},{"t":39.321,"l":2},{"t":41.41,"l":3},{"t":41.828,"l":3},{"t":42.455,"l":1},{"t":42.873,"l":2},{"t":43.291,"l":1},{"t":43.709,"l":0},{"t":44.127,"l":0},{"t":44.545,"l":1},{"t":44.963,"l":0},{"t":45.381,"l":3},{"t":45.799,"l":1},{"t":46.217,"l":0},{"t":48.306,"l":1},{"t":49.769,"l":0},{"t":50.187,"l":3},{"t":50.605,"l":2},{"t":51.023,"l":2},{"t":51.859,"l":1},{"t":53.74,"l":2},{"t":57.919,"l":1},{"t":58.546,"l":1},{"t":59.382,"l":3},{"t":59.8,"l":2},{"t":60.218,"l":1},{"t":60.636,"l":1},{"t":61.053,"l":2},{"t":61.471,"l":2},{"t":64.397,"l":1},{"t":65.442,"l":1},{"t":65.86,"l":2},{"t":66.278,"l":1},{"t":66.696,"l":3},{"t":67.114,"l":1},{"t":67.531,"l":2},{"t":68.158,"l":0},{"t":68.576,"l":1},{"t":69.621,"l":1},{"t":70.875,"l":0},{"t":73.383,"l":1},{"t":74.009,"l":2},{"t":74.427,"l":2},{"t":75.054,"l":1},{"t":75.472,"l":0},{"t":75.89,"l":1},{"t":76.308,"l":3},{"t":76.726,"l":3},{"t":77.353,"l":1},{"t":80.696,"l":1},{"t":81.114,"l":2},{"t":81.95,"l":1},{"t":82.368,"l":2},{"t":82.995,"l":3},{"t":83.413,"l":1},{"t":83.831,"l":1},{"t":84.249,"l":3},{"t":84.667,"l":1},{"t":85.294,"l":0},{"t":85.712,"l":2},{"t":86.13,"l":0},{"t":86.548,"l":1},{"t":87.174,"l":1},{"t":87.592,"l":0},{"t":88.01,"l":2},{"t":88.428,"l":0},{"t":88.846,"l":0},{"t":89.264,"l":1},{"t":89.682,"l":0},{"t":90.1,"l":1},{"t":90.518,"l":1},{"t":90.936,"l":3},{"t":91.354,"l":1},{"t":91.981,"l":3},{"t":92.399,"l":3},{"t":93.235,"l":2},{"t":94.279,"l":0},{"t":95.324,"l":0},{"t":95.742,"l":1},{"t":96.16,"l":0},{"t":96.578,"l":1},{"t":96.996,"l":1},{"t":97.623,"l":0},{"t":98.668,"l":2},{"t":99.504,"l":3},{"t":102.011,"l":3},{"t":102.638,"l":2},{"t":103.056,"l":3},{"t":103.474,"l":0},{"t":103.892,"l":1},{"t":104.519,"l":2},{"t":105.564,"l":1},{"t":106.191,"l":2},{"t":106.609,"l":1},{"t":107.026,"l":1},{"t":108.698,"l":0},{"t":109.952,"l":1},{"t":110.37,"l":2},{"t":110.788,"l":2},{"t":111.415,"l":0},{"t":111.833,"l":1},{"t":112.251,"l":1},{"t":112.669,"l":0},{"t":113.087,"l":0},{"t":113.504,"l":1},{"t":113.922,"l":1},{"t":114.34,"l":2},{"t":116.012,"l":0},{"t":117.266,"l":2},{"t":117.684,"l":1},{"t":118.102,"l":2},{"t":118.52,"l":2},{"t":118.938,"l":1},{"t":119.565,"l":1},{"t":119.983,"l":2},{"t":120.4,"l":1},{"t":120.818,"l":2},{"t":121.236,"l":1},{"t":123.326,"l":3},{"t":123.744,"l":2},{"t":124.162,"l":3},{"t":124.58,"l":3},{"t":124.998,"l":1},{"t":125.416,"l":2},{"t":125.834,"l":1},{"t":126.252,"l":0},{"t":126.669,"l":2},{"t":127.087,"l":2},{"t":127.505,"l":1},{"t":127.923,"l":3},{"t":128.341,"l":2},{"t":129.804,"l":1},{"t":130.222,"l":0},{"t":130.849,"l":2},{"t":131.476,"l":1},{"t":131.894,"l":1},{"t":132.312,"l":3},{"t":132.73,"l":3},{"t":133.148,"l":1},{"t":133.565,"l":3},{"t":133.983,"l":3},{"t":134.401,"l":2},{"t":134.819,"l":0},{"t":135.446,"l":3},{"t":138.79,"l":3},{"t":139.208,"l":1}],"normal":[{"t":1.288,"l":0},{"t":1.497,"l":1},{"t":1.706,"l":0},{"t":1.915,"l":1},{"t":2.542,"l":1},{"t":2.96,"l":2},{"t":3.378,"l":1},{"t":4.005,"l":2},{"t":4.214,"l":1},{"t":4.423,"l":2},{"t":4.632,"l":0},{"t":4.841,"l":1},{"t":5.05,"l":0},{"t":5.259,"l":1},{"t":5.468,"l":0},{"t":5.677,"l":3},{"t":5.886,"l":3},{"t":6.304,"l":0},{"t":6.722,"l":0},{"t":6.931,"l":2},{"t":7.975,"l":2},{"t":8.184,"l":1},{"t":9.856,"l":2},{"t":10.274,"l":3},{"t":10.483,"l":3},{"t":10.692,"l":2},{"t":10.901,"l":2},{"t":11.11,"l":1},{"t":11.319,"l":2},{"t":11.528,"l":1},{"t":11.737,"l":2},{"t":11.946,"l":1},{"t":12.155,"l":2},{"t":12.364,"l":2},{"t":12.573,"l":1},{"t":12.782,"l":1},{"t":12.991,"l":2},{"t":13.2,"l":2},{"t":13.827,"l":0},{"t":14.036,"l":2},{"t":14.245,"l":1},{"t":14.453,"l":2},{"t":14.662,"l":3},{"t":15.498,"l":0},{"t":15.707,"l":0},{"t":15.916,"l":1},{"t":16.125,"l":1},{"t":16.334,"l":2},{"t":16.543,"l":2},{"t":17.17,"l":3},{"t":17.379,"l":2},{"t":17.588,"l":3},{"t":18.006,"l":2},{"t":18.215,"l":3},{"t":18.424,"l":1},{"t":18.842,"l":2},{"t":19.051,"l":2},{"t":19.26,"l":0},{"t":19.469,"l":1},{"t":19.678,"l":3},{"t":19.887,"l":2},{"t":20.305,"l":3},{"t":20.514,"l":1},{"t":20.723,"l":2},{"t":20.932,"l":1},{"t":21.14,"l":2},{"t":21.349,"l":1},{"t":21.558,"l":3},{"t":21.767,"l":1},{"t":21.976,"l":2},{"t":22.185,"l":3},{"t":22.394,"l":2},{"t":23.439,"l":2},{"t":23.648,"l":1},{"t":23.857,"l":2},{"t":24.693,"l":3},{"t":25.111,"l":3},{"t":25.32,"l":0},{"t":25.529,"l":1},{"t":25.738,"l":1},{"t":25.947,"l":2},{"t":26.156,"l":0},{"t":26.365,"l":0},{"t":26.574,"l":1},{"t":26.992,"l":1},{"t":27.201,"l":2},{"t":27.41,"l":1},{"t":27.619,"l":2},{"t":27.827,"l":1},{"t":28.036,"l":0},{"t":28.245,"l":3},{"t":28.454,"l":3},{"t":28.663,"l":2},{"t":28.872,"l":1},{"t":29.081,"l":1},{"t":29.29,"l":3},{"t":29.499,"l":1},{"t":29.708,"l":1},{"t":29.917,"l":3},{"t":30.126,"l":1},{"t":32.007,"l":3},{"t":33.261,"l":2},{"t":33.47,"l":3},{"t":33.679,"l":1},{"t":33.888,"l":1},{"t":34.097,"l":3},{"t":34.305,"l":3},{"t":34.514,"l":2},{"t":34.723,"l":1},{"t":34.932,"l":2},{"t":35.141,"l":1},{"t":35.35,"l":1},{"t":35.559,"l":3},{"t":35.768,"l":1},{"t":35.977,"l":1},{"t":36.186,"l":2},{"t":36.395,"l":0},{"t":36.604,"l":1},{"t":36.813,"l":1},{"t":37.022,"l":2},{"t":37.231,"l":3},{"t":37.44,"l":1},{"t":37.649,"l":3},{"t":37.858,"l":0},{"t":38.067,"l":0},{"t":38.276,"l":2},{"t":39.112,"l":2},{"t":39.321,"l":0},{"t":39.53,"l":2},{"t":40.784,"l":2},{"t":40.992,"l":3},{"t":41.41,"l":0},{"t":41.619,"l":2},{"t":41.828,"l":3},{"t":42.037,"l":1},{"t":42.246,"l":0},{"t":42.455,"l":1},{"t":42.873,"l":2},{"t":43.291,"l":1},{"t":43.5,"l":1},{"t":43.709,"l":0},{"t":44.127,"l":0},{"t":44.336,"l":2},{"t":44.545,"l":0},{"t":44.754,"l":2},{"t":44.963,"l":0},{"t":45.172,"l":0},{"t":45.381,"l":3},{"t":45.59,"l":3},{"t":45.799,"l":2},{"t":46.008,"l":0},{"t":46.217,"l":0},{"t":47.053,"l":3},{"t":47.262,"l":1},{"t":48.306,"l":1},{"t":49.351,"l":2},{"t":49.769,"l":2},{"t":50.187,"l":3},{"t":50.605,"l":0},{"t":51.023,"l":3},{"t":51.232,"l":1},{"t":51.441,"l":2},{"t":51.859,"l":3},{"t":52.068,"l":2},{"t":52.277,"l":1},{"t":52.695,"l":2},{"t":53.74,"l":2},{"t":53.949,"l":1},{"t":54.157,"l":1},{"t":57.919,"l":0},{"t":58.128,"l":1},{"t":58.546,"l":2},{"t":58.755,"l":0},{"t":58.964,"l":2},{"t":59.173,"l":1},{"t":59.382,"l":0},{"t":59.591,"l":1},{"t":59.8,"l":2},{"t":60.218,"l":1},{"t":60.427,"l":1},{"t":60.636,"l":3},{"t":60.844,"l":1},{"t":61.053,"l":1},{"t":61.262,"l":0},{"t":61.471,"l":1},{"t":61.68,"l":2},{"t":61.889,"l":0},{"t":64.397,"l":2},{"t":65.024,"l":3},{"t":65.233,"l":1},{"t":65.442,"l":1},{"t":65.651,"l":0},{"t":65.86,"l":3},{"t":66.069,"l":1},{"t":66.278,"l":2},{"t":66.487,"l":0},{"t":66.696,"l":2},{"t":66.905,"l":2},{"t":67.114,"l":3},{"t":67.322,"l":1},{"t":67.531,"l":1},{"t":67.74,"l":2},{"t":67.949,"l":1},{"t":68.158,"l":1},{"t":68.367,"l":2},{"t":68.576,"l":2},{"t":68.785,"l":1},{"t":68.994,"l":3},{"t":69.203,"l":2},{"t":69.412,"l":0},{"t":69.621,"l":1},{"t":70.875,"l":3},{"t":72.547,"l":3},{"t":72.756,"l":1},{"t":73.383,"l":0},{"t":73.592,"l":2},{"t":73.801,"l":1},{"t":74.009,"l":2},{"t":74.218,"l":2},{"t":74.427,"l":0},{"t":74.636,"l":3},{"t":74.845,"l":1},{"t":75.054,"l":2},{"t":75.263,"l":1},{"t":75.472,"l":3},{"t":75.681,"l":1},{"t":75.89,"l":1},{"t":76.099,"l":0},{"t":76.308,"l":0},{"t":76.517,"l":1},{"t":76.726,"l":3},{"t":76.935,"l":1},{"t":77.353,"l":0},{"t":77.562,"l":1},{"t":78.189,"l":1},{"t":80.696,"l":2},{"t":80.905,"l":2},{"t":81.114,"l":1},{"t":81.532,"l":1},{"t":81.95,"l":3},{"t":82.368,"l":2},{"t":82.577,"l":2},{"t":82.995,"l":3},{"t":83.204,"l":3},{"t":83.413,"l":1},{"t":83.622,"l":0},{"t":83.831,"l":1},{"t":84.04,"l":3},{"t":84.249,"l":3},{"t":84.458,"l":1},{"t":84.667,"l":1},{"t":84.876,"l":0},{"t":85.294,"l":1},{"t":85.712,"l":1},{"t":86.13,"l":0},{"t":86.548,"l":1},{"t":87.174,"l":1},{"t":87.592,"l":3},{"t":87.801,"l":1},{"t":88.01,"l":2},{"t":88.219,"l":3},{"t":88.428,"l":1},{"t":88.637,"l":0},{"t":88.846,"l":0},{"t":89.055,"l":1},{"t":89.264,"l":0},{"t":89.473,"l":1},{"t":89.682,"l":0},{"t":89.891,"l":2},{"t":90.1,"l":1},{"t":90.309,"l":3},{"t":90.518,"l":1},{"t":90.727,"l":2},{"t":90.936,"l":3},{"t":91.145,"l":0},{"t":91.354,"l":0},{"t":91.563,"l":1},{"t":91.772,"l":0},{"t":91.981,"l":3},{"t":92.19,"l":2},{"t":92.399,"l":2},{"t":93.235,"l":3},{"t":93.444,"l":0},{"t":93.652,"l":1},{"t":94.07,"l":2},{"t":94.279,"l":1},{"t":94.906,"l":2},{"t":95.324,"l":0},{"t":95.533,"l":0},{"t":95.742,"l":3},{"t":95.951,"l":0},{"t":96.16,"l":1},{"t":96.369,"l":1},{"t":96.578,"l":2},{"t":96.996,"l":1},{"t":97.623,"l":0},{"t":97.832,"l":0},{"t":98.25,"l":2},{"t":98.668,"l":1},{"t":99.504,"l":3},{"t":99.713,"l":3},{"t":100.131,"l":1},{"t":102.011,"l":0},{"t":102.638,"l":1},{"t":102.847,"l":1},{"t":103.056,"l":3},{"t":103.474,"l":3},{"t":103.892,"l":0},{"t":104.101,"l":1},{"t":104.31,"l":1},{"t":104.519,"l":0},{"t":104.728,"l":1},{"t":104.937,"l":2},{"t":105.146,"l":1},{"t":105.355,"l":0},{"t":105.564,"l":2},{"t":105.773,"l":1},{"t":105.982,"l":1},{"t":106.191,"l":3},{"t":106.4,"l":1},{"t":106.609,"l":1},{"t":107.026,"l":2},{"t":107.862,"l":1},{"t":108.28,"l":0},{"t":108.698,"l":0},{"t":109.116,"l":1},{"t":109.534,"l":0},{"t":109.952,"l":1},{"t":110.161,"l":0},{"t":110.37,"l":1},{"t":110.579,"l":1},{"t":110.788,"l":0},{"t":110.997,"l":2},{"t":111.206,"l":1},{"t":111.415,"l":2},{"t":111.624,"l":0},{"t":111.833,"l":1},{"t":112.042,"l":0},{"t":112.251,"l":1},{"t":112.46,"l":1},{"t":112.669,"l":0},{"t":112.878,"l":0},{"t":113.087,"l":2},{"t":113.296,"l":1},{"t":113.504,"l":1},{"t":113.713,"l":0},{"t":113.922,"l":2},{"t":114.131,"l":1},{"t":114.34,"l":0},{"t":115.176,"l":0},{"t":115.594,"l":1},{"t":116.012,"l":0},{"t":116.848,"l":0},{"t":117.057,"l":1},{"t":117.266,"l":1},{"t":117.475,"l":3},{"t":117.684,"l":1},{"t":117.893,"l":2},{"t":118.102,"l":2},{"t":118.311,"l":1},{"t":118.52,"l":2},{"t":118.729,"l":2},{"t":118.938,"l":1},{"t":119.147,"l":1},{"t":119.356,"l":3},{"t":119.565,"l":1},{"t":119.774,"l":2},{"t":119.983,"l":0},{"t":120.191,"l":0},{"t":120.4,"l":1},{"t":120.609,"l":2},{"t":120.818,"l":1},{"t":121.027,"l":2},{"t":121.236,"l":1},{"t":121.445,"l":3},{"t":121.654,"l":1},{"t":122.072,"l":1},{"t":122.49,"l":3},{"t":123.326,"l":3},{"t":123.744,"l":1},{"t":124.162,"l":3},{"t":124.371,"l":2},{"t":124.58,"l":2},{"t":124.789,"l":1},{"t":124.998,"l":1},{"t":125.207,"l":3},{"t":125.416,"l":2},{"t":125.625,"l":2},{"t":125.834,"l":1},{"t":126.043,"l":2},{"t":126.252,"l":2},{"t":126.461,"l":1},{"t":126.669,"l":1},{"t":126.878,"l":2},{"t":127.087,"l":1},{"t":127.296,"l":1},{"t":127.505,"l":3},{"t":127.714,"l":0},{"t":127.923,"l":0},{"t":128.132,"l":1},{"t":128.341,"l":1},{"t":128.55,"l":0},{"t":129.386,"l":1},{"t":129.804,"l":1},{"t":130.222,"l":0},{"t":130.64,"l":1},{"t":130.849,"l":2},{"t":131.058,"l":1},{"t":131.267,"l":0},{"t":131.476,"l":1},{"t":131.685,"l":1},{"t":131.894,"l":2},{"t":132.103,"l":2},{"t":132.312,"l":1},{"t":132.521,"l":2},{"t":132.73,"l":2},{"t":132.939,"l":1},{"t":133.148,"l":1},{"t":133.356,"l":3},{"t":133.565,"l":2},{"t":133.774,"l":1},{"t":133.983,"l":0},{"t":134.192,"l":2},{"t":134.401,"l":2},{"t":134.61,"l":3},{"t":134.819,"l":0},{"t":135.446,"l":3},{"t":135.655,"l":0},{"t":137.954,"l":0},{"t":138.79,"l":3},{"t":139.208,"l":2}],"hard":[{"t":1.184,"l":0},{"t":1.288,"l":1},{"t":1.497,"l":1},{"t":1.602,"l":0},{"t":1.811,"l":0},{"t":2.02,"l":3},{"t":2.229,"l":3},{"t":2.542,"l":2},{"t":2.856,"l":0},{"t":2.96,"l":1},{"t":3.065,"l":2},{"t":4.005,"l":2},{"t":4.11,"l":1},{"t":4.214,"l":1},{"t":4.423,"l":0},{"t":4.528,"l":1},{"t":4.632,"l":3},{"t":4.841,"l":0},{"t":4.945,"l":0},{"t":5.05,"l":3},{"t":5.259,"l":1},{"t":5.363,"l":0},{"t":5.468,"l":1},{"t":5.572,"l":0},{"t":5.886,"l":0},{"t":6.304,"l":2},{"t":6.722,"l":0},{"t":6.826,"l":1},{"t":7.453,"l":2},{"t":7.871,"l":2},{"t":7.975,"l":1},{"t":8.289,"l":2},{"t":8.498,"l":2},{"t":8.916,"l":0},{"t":9.125,"l":3},{"t":9.334,"l":3},{"t":9.543,"l":1},{"t":9.752,"l":3},{"t":9.856,"l":2},{"t":9.961,"l":2},{"t":10.692,"l":3},{"t":10.797,"l":3},{"t":11.11,"l":1},{"t":11.214,"l":2},{"t":11.528,"l":2},{"t":12.155,"l":3},{"t":12.364,"l":2},{"t":12.782,"l":1},{"t":13.2,"l":2},{"t":13.931,"l":1},{"t":14.036,"l":2},{"t":14.14,"l":1},{"t":14.245,"l":3},{"t":14.349,"l":0},{"t":14.453,"l":2},{"t":14.558,"l":1},{"t":14.662,"l":3},{"t":14.767,"l":3},{"t":14.976,"l":1},{"t":15.498,"l":0},{"t":15.603,"l":1},{"t":15.916,"l":0},{"t":16.021,"l":1},{"t":16.125,"l":1},{"t":16.439,"l":3},{"t":16.648,"l":2},{"t":17.17,"l":2},{"t":17.379,"l":0},{"t":17.484,"l":1},{"t":17.588,"l":3},{"t":17.693,"l":1},{"t":18.006,"l":2},{"t":18.11,"l":0},{"t":18.215,"l":3},{"t":18.319,"l":1},{"t":18.424,"l":2},{"t":18.842,"l":2},{"t":18.946,"l":0},{"t":19.051,"l":2},{"t":19.155,"l":0},{"t":19.26,"l":0},{"t":19.469,"l":3},{"t":19.678,"l":3},{"t":19.887,"l":1},{"t":20.514,"l":1},{"t":20.618,"l":3},{"t":20.723,"l":2},{"t":20.827,"l":2},{"t":20.932,"l":0},{"t":21.14,"l":3},{"t":21.349,"l":0},{"t":21.454,"l":2},{"t":21.558,"l":2},{"t":21.767,"l":1},{"t":21.872,"l":2},{"t":21.976,"l":2},{"t":22.081,"l":1},{"t":22.185,"l":2},{"t":22.29,"l":2},{"t":22.499,"l":0},{"t":22.708,"l":2},{"t":22.917,"l":1},{"t":23.126,"l":2},{"t":23.335,"l":1},{"t":23.544,"l":2},{"t":23.857,"l":2},{"t":24.171,"l":1},{"t":24.379,"l":3},{"t":24.693,"l":1},{"t":24.797,"l":2},{"t":25.006,"l":3},{"t":25.111,"l":0},{"t":25.215,"l":0},{"t":25.32,"l":1},{"t":25.424,"l":1},{"t":25.529,"l":3},{"t":25.633,"l":3},{"t":25.738,"l":1},{"t":25.842,"l":2},{"t":25.947,"l":0},{"t":26.051,"l":0},{"t":26.156,"l":3},{"t":26.26,"l":1},{"t":26.365,"l":1},{"t":26.574,"l":2},{"t":27.201,"l":2},{"t":27.514,"l":0},{"t":27.619,"l":2},{"t":27.827,"l":1},{"t":28.036,"l":1},{"t":28.245,"l":0},{"t":28.454,"l":2},{"t":28.663,"l":1},{"t":28.768,"l":2},{"t":28.872,"l":0},{"t":29.081,"l":2},{"t":29.186,"l":1},{"t":29.29,"l":0},{"t":29.499,"l":1},{"t":29.708,"l":1},{"t":29.813,"l":0},{"t":29.917,"l":0},{"t":30.022,"l":2},{"t":30.231,"l":2},{"t":30.44,"l":1},{"t":30.649,"l":2},{"t":30.858,"l":2},{"t":31.066,"l":1},{"t":31.275,"l":2},{"t":31.484,"l":1},{"t":31.693,"l":1},{"t":31.902,"l":3},{"t":32.111,"l":2},{"t":32.32,"l":0},{"t":32.529,"l":1},{"t":32.738,"l":2},{"t":33.156,"l":1},{"t":33.365,"l":1},{"t":33.47,"l":3},{"t":33.574,"l":1},{"t":33.679,"l":2},{"t":33.783,"l":0},{"t":33.888,"l":1},{"t":33.992,"l":0},{"t":34.097,"l":2},{"t":34.201,"l":0},{"t":34.305,"l":3},{"t":34.41,"l":1},{"t":34.514,"l":2},{"t":34.619,"l":1},{"t":34.723,"l":1},{"t":34.932,"l":3},{"t":35.141,"l":1},{"t":35.35,"l":0},{"t":35.559,"l":3},{"t":35.664,"l":2},{"t":35.768,"l":1},{"t":35.977,"l":1},{"t":36.186,"l":2},{"t":36.291,"l":1},{"t":36.395,"l":0},{"t":36.604,"l":1},{"t":36.813,"l":1},{"t":37.022,"l":2},{"t":37.231,"l":1},{"t":37.44,"l":1},{"t":37.544,"l":2},{"t":37.649,"l":2},{"t":37.753,"l":3},{"t":37.858,"l":0},{"t":37.962,"l":1},{"t":38.067,"l":0},{"t":38.171,"l":1},{"t":38.38,"l":1},{"t":38.589,"l":3},{"t":38.798,"l":1},{"t":39.112,"l":2},{"t":39.216,"l":1},{"t":39.321,"l":3},{"t":39.425,"l":2},{"t":39.53,"l":2},{"t":40.052,"l":0},{"t":40.261,"l":2},{"t":40.47,"l":0},{"t":41.097,"l":1},{"t":41.41,"l":2},{"t":41.515,"l":0},{"t":41.619,"l":2},{"t":41.724,"l":3},{"t":41.828,"l":3},{"t":41.933,"l":1},{"t":42.037,"l":1},{"t":42.142,"l":0},{"t":42.455,"l":0},{"t":42.56,"l":2},{"t":42.873,"l":2},{"t":43.291,"l":1},{"t":43.5,"l":1},{"t":43.709,"l":0},{"t":44.023,"l":1},{"t":44.127,"l":0},{"t":44.336,"l":1},{"t":44.545,"l":0},{"t":44.754,"l":2},{"t":44.858,"l":0},{"t":44.963,"l":0},{"t":45.172,"l":3},{"t":45.276,"l":2},{"t":45.381,"l":0},{"t":45.485,"l":3},{"t":45.59,"l":0},{"t":45.694,"l":2},{"t":45.799,"l":1},{"t":46.008,"l":0},{"t":46.112,"l":2},{"t":46.217,"l":3},{"t":46.739,"l":1},{"t":47.366,"l":1},{"t":47.575,"l":0},{"t":47.784,"l":1},{"t":48.306,"l":0},{"t":48.411,"l":1},{"t":48.62,"l":1},{"t":49.038,"l":0},{"t":49.769,"l":2},{"t":49.874,"l":1},{"t":50.187,"l":3},{"t":50.292,"l":2},{"t":50.605,"l":2},{"t":51.023,"l":3},{"t":51.545,"l":2},{"t":51.859,"l":2},{"t":51.963,"l":1},{"t":52.277,"l":3},{"t":53.74,"l":2},{"t":53.949,"l":1},{"t":54.68,"l":1},{"t":55.098,"l":0},{"t":57.188,"l":1},{"t":57.396,"l":3},{"t":57.605,"l":1},{"t":57.919,"l":1},{"t":58.023,"l":3},{"t":58.128,"l":2},{"t":58.232,"l":1},{"t":58.546,"l":2},{"t":58.755,"l":0},{"t":58.964,"l":2},{"t":59.382,"l":0},{"t":59.591,"l":1},{"t":59.8,"l":2},{"t":60.218,"l":1},{"t":60.427,"l":1},{"t":60.636,"l":2},{"t":60.844,"l":0},{"t":61.053,"l":1},{"t":61.262,"l":1},{"t":61.471,"l":3},{"t":61.68,"l":1},{"t":61.785,"l":1},{"t":62.203,"l":2},{"t":62.412,"l":2},{"t":62.83,"l":1},{"t":63.248,"l":2},{"t":63.457,"l":2},{"t":63.666,"l":1},{"t":63.875,"l":2},{"t":64.083,"l":0},{"t":64.292,"l":3},{"t":64.397,"l":1},{"t":64.71,"l":1},{"t":65.442,"l":2},{"t":65.546,"l":1},{"t":65.651,"l":3},{"t":65.755,"l":1},{"t":65.86,"l":3},{"t":65.964,"l":1},{"t":66.069,"l":2},{"t":66.173,"l":1},{"t":66.278,"l":1},{"t":66.382,"l":2},{"t":66.487,"l":1},{"t":66.696,"l":1},{"t":66.905,"l":2},{"t":67.114,"l":1},{"t":67.322,"l":1},{"t":67.531,"l":0},{"t":67.74,"l":1},{"t":68.158,"l":1},{"t":68.367,"l":2},{"t":68.576,"l":1},{"t":69.412,"l":1},{"t":69.517,"l":3},{"t":69.621,"l":2},{"t":70.144,"l":2},{"t":70.77,"l":0},{"t":70.875,"l":0},{"t":70.979,"l":1},{"t":71.188,"l":1},{"t":71.606,"l":2},{"t":71.815,"l":0},{"t":72.233,"l":0},{"t":72.442,"l":2},{"t":72.651,"l":1},{"t":72.86,"l":3},{"t":73.383,"l":0},{"t":73.487,"l":1},{"t":73.592,"l":3},{"t":73.696,"l":0},{"t":74.009,"l":2},{"t":74.114,"l":3},{"t":74.218,"l":1},{"t":74.427,"l":2},{"t":74.636,"l":0},{"t":74.845,"l":0},{"t":75.054,"l":1},{"t":75.263,"l":1},{"t":75.472,"l":3},{"t":75.89,"l":1},{"t":76.099,"l":2},{"t":76.308,"l":0},{"t":76.517,"l":1},{"t":76.726,"l":1},{"t":76.935,"l":2},{"t":77.248,"l":2},{"t":77.353,"l":1},{"t":77.457,"l":3},{"t":77.666,"l":1},{"t":78.084,"l":1},{"t":78.293,"l":3},{"t":78.502,"l":1},{"t":78.711,"l":1},{"t":79.129,"l":3},{"t":79.338,"l":2},{"t":79.547,"l":1},{"t":79.756,"l":1},{"t":79.965,"l":0},{"t":80.174,"l":1},{"t":80.383,"l":0},{"t":80.696,"l":2},{"t":80.905,"l":2},{"t":81.01,"l":0},{"t":81.114,"l":2},{"t":81.219,"l":2},{"t":81.95,"l":1},{"t":82.264,"l":0},{"t":82.368,"l":1},{"t":82.577,"l":2},{"t":82.891,"l":0},{"t":82.995,"l":3},{"t":83.1,"l":0},{"t":83.204,"l":3},{"t":83.413,"l":1},{"t":83.622,"l":3},{"t":83.831,"l":1},{"t":83.935,"l":2},{"t":84.04,"l":3},{"t":84.249,"l":3},{"t":84.353,"l":1},{"t":84.458,"l":3},{"t":84.562,"l":3},{"t":84.667,"l":1},{"t":84.771,"l":1},{"t":84.876,"l":0},{"t":84.98,"l":2},{"t":85.189,"l":3},{"t":85.294,"l":1},{"t":85.398,"l":2},{"t":85.607,"l":3},{"t":85.712,"l":3},{"t":85.816,"l":2},{"t":86.025,"l":1},{"t":86.13,"l":3},{"t":86.234,"l":0},{"t":86.443,"l":2},{"t":86.548,"l":3},{"t":86.652,"l":3},{"t":86.861,"l":0},{"t":87.07,"l":1},{"t":87.174,"l":1},{"t":87.279,"l":3},{"t":87.488,"l":0},{"t":87.592,"l":1},{"t":87.697,"l":1},{"t":88.01,"l":2},{"t":88.115,"l":3},{"t":88.219,"l":3},{"t":88.324,"l":1},{"t":88.428,"l":1},{"t":88.533,"l":3},{"t":88.846,"l":0},{"t":88.951,"l":2},{"t":89.055,"l":2},{"t":89.16,"l":0},{"t":89.264,"l":0},{"t":89.369,"l":2},{"t":89.473,"l":2},{"t":89.682,"l":0},{"t":89.891,"l":0},{"t":90.1,"l":1},{"t":90.309,"l":3},{"t":90.518,"l":1},{"t":90.831,"l":1},{"t":90.936,"l":3},{"t":91.145,"l":0},{"t":91.354,"l":0},{"t":91.563,"l":1},{"t":91.772,"l":0},{"t":91.876,"l":1},{"t":91.981,"l":3},{"t":92.294,"l":3},{"t":92.399,"l":2},{"t":92.503,"l":2},{"t":92.712,"l":3},{"t":92.921,"l":1},{"t":93.13,"l":2},{"t":93.235,"l":3},{"t":93.339,"l":1},{"t":93.548,"l":2},{"t":93.757,"l":1},{"t":93.966,"l":2},{"t":94.279,"l":1},{"t":94.384,"l":1},{"t":94.593,"l":3},{"t":94.802,"l":2},{"t":95.011,"l":0},{"t":95.22,"l":0},{"t":95.324,"l":3},{"t":95.429,"l":0},{"t":95.533,"l":0},{"t":95.638,"l":1},{"t":95.742,"l":0},{"t":95.847,"l":0},{"t":95.951,"l":3},{"t":96.056,"l":0},{"t":96.16,"l":0},{"t":96.265,"l":1},{"t":96.369,"l":0},{"t":96.474,"l":3},{"t":96.578,"l":0},{"t":96.683,"l":1},{"t":96.996,"l":1},{"t":97.623,"l":2},{"t":97.832,"l":0},{"t":98.563,"l":3},{"t":98.668,"l":1},{"t":99.399,"l":3},{"t":99.504,"l":2},{"t":99.817,"l":0},{"t":100.444,"l":2},{"t":101.489,"l":2},{"t":102.011,"l":3},{"t":102.116,"l":2},{"t":102.534,"l":3},{"t":102.638,"l":2},{"t":102.743,"l":1},{"t":102.847,"l":1},{"t":102.952,"l":2},{"t":103.056,"l":3},{"t":103.161,"l":2},{"t":103.474,"l":3},{"t":103.578,"l":2},{"t":103.892,"l":1},{"t":104.101,"l":1},{"t":104.31,"l":3},{"t":104.519,"l":0},{"t":104.728,"l":0},{"t":105.355,"l":3},{"t":105.459,"l":1},{"t":105.564,"l":1},{"t":105.773,"l":0},{"t":106.191,"l":1},{"t":106.4,"l":0},{"t":106.609,"l":1},{"t":106.922,"l":3},{"t":107.026,"l":1},{"t":107.758,"l":1},{"t":107.967,"l":3},{"t":108.176,"l":2},{"t":108.385,"l":0},{"t":108.594,"l":3},{"t":108.698,"l":0},{"t":109.012,"l":2},{"t":109.221,"l":0},{"t":109.43,"l":1},{"t":109.848,"l":0},{"t":109.952,"l":0},{"t":110.057,"l":1},{"t":110.161,"l":1},{"t":110.265,"l":2},{"t":110.37,"l":1},{"t":110.474,"l":0},{"t":110.579,"l":2},{"t":110.683,"l":1},{"t":110.788,"l":0},{"t":110.892,"l":2},{"t":110.997,"l":2},{"t":111.101,"l":0},{"t":111.206,"l":1},{"t":111.415,"l":3},{"t":111.624,"l":1},{"t":111.728,"l":0},{"t":111.833,"l":2},{"t":112.251,"l":0},{"t":112.46,"l":1},{"t":112.669,"l":3},{"t":112.878,"l":1},{"t":113.087,"l":1},{"t":113.191,"l":0},{"t":113.4,"l":1},{"t":113.504,"l":2},{"t":113.922,"l":1},{"t":114.131,"l":1},{"t":114.236,"l":2},{"t":114.34,"l":1},{"t":114.445,"l":1},{"t":114.654,"l":2},{"t":114.863,"l":1},{"t":115.072,"l":2},{"t":115.281,"l":2},{"t":115.49,"l":0},{"t":115.699,"l":1},{"t":115.908,"l":1},{"t":116.012,"l":0},{"t":116.117,"l":1},{"t":116.326,"l":1},{"t":116.535,"l":2},{"t":116.744,"l":2},{"t":116.848,"l":1},{"t":116.952,"l":1},{"t":117.161,"l":2},{"t":117.266,"l":1},{"t":117.37,"l":2},{"t":117.475,"l":2},{"t":117.579,"l":1},{"t":117.684,"l":1},{"t":117.788,"l":0},{"t":117.893,"l":2},{"t":117.997,"l":3},{"t":118.102,"l":2},{"t":118.206,"l":1},{"t":118.311,"l":3},{"t":118.415,"l":1},{"t":118.52,"l":2},{"t":118.729,"l":3},{"t":118.938,"l":1},{"t":119.147,"l":0},{"t":119.251,"l":1},{"t":119.356,"l":0},{"t":119.565,"l":0},{"t":119.774,"l":2},{"t":119.983,"l":2},{"t":120.191,"l":0},{"t":120.4,"l":1},{"t":120.609,"l":2},{"t":120.818,"l":1},{"t":121.027,"l":1},{"t":121.132,"l":2},{"t":121.236,"l":2},{"t":121.341,"l":3},{"t":121.445,"l":2},{"t":121.55,"l":2},{"t":121.759,"l":0},{"t":121.968,"l":3},{"t":122.177,"l":0},{"t":122.386,"l":3},{"t":122.595,"l":1},{"t":123.013,"l":1},{"t":123.326,"l":2},{"t":123.43,"l":0},{"t":123.744,"l":3},{"t":123.848,"l":3},{"t":124.162,"l":2},{"t":124.266,"l":2},{"t":124.371,"l":1},{"t":124.58,"l":2},{"t":124.684,"l":2},{"t":124.789,"l":1},{"t":124.893,"l":0},{"t":124.998,"l":1},{"t":125.102,"l":3},{"t":125.207,"l":2},{"t":125.311,"l":2},{"t":125.416,"l":0},{"t":125.625,"l":2},{"t":125.834,"l":0},{"t":126.043,"l":2},{"t":126.147,"l":1},{"t":126.252,"l":2},{"t":126.252,"l":0},{"t":126.461,"l":2},{"t":126.669,"l":1},{"t":126.878,"l":2},{"t":127.087,"l":2},{"t":127.296,"l":1},{"t":127.505,"l":1},{"t":127.61,"l":2},{"t":127.714,"l":0},{"t":127.923,"l":3},{"t":128.028,"l":0},{"t":128.132,"l":0},{"t":128.237,"l":1},{"t":128.341,"l":2},{"t":128.446,"l":0},{"t":128.55,"l":0},{"t":128.655,"l":2},{"t":128.864,"l":0},{"t":129.073,"l":1},{"t":129.282,"l":2},{"t":129.491,"l":1},{"t":129.7,"l":2},{"t":129.804,"l":2},{"t":129.909,"l":1},{"t":130.117,"l":2},{"t":130.222,"l":0},{"t":130.326,"l":2},{"t":130.535,"l":2},{"t":130.64,"l":1},{"t":130.744,"l":2},{"t":130.849,"l":2},{"t":130.953,"l":1},{"t":131.162,"l":2},{"t":131.371,"l":0},{"t":131.476,"l":1},{"t":131.58,"l":1},{"t":131.685,"l":3},{"t":131.789,"l":1},{"t":131.894,"l":3},{"t":131.998,"l":1},{"t":132.103,"l":2},{"t":132.207,"l":1},{"t":132.312,"l":1},{"t":132.521,"l":3},{"t":132.73,"l":3},{"t":132.939,"l":2},{"t":133.043,"l":1},{"t":133.148,"l":1},{"t":133.356,"l":2},{"t":133.565,"l":2},{"t":133.774,"l":0},{"t":133.879,"l":0},{"t":133.983,"l":1},{"t":134.192,"l":2},{"t":134.401,"l":3},{"t":134.61,"l":2},{"t":134.819,"l":0},{"t":135.446,"l":3},{"t":135.551,"l":0},{"t":135.655,"l":0},{"t":135.969,"l":2},{"t":136.387,"l":3},{"t":136.804,"l":0},{"t":137.222,"l":0},{"t":138.79,"l":1},{"t":138.894,"l":0},{"t":139.208,"l":2}]}};
+const $=id=>document.getElementById(id);
+const cv=$('cv'),cx=cv.getContext('2d');
+const LANES=4, KEYS=['d','f','j','k'];
+const W_PERF=0.055,W_GOOD=0.11,W_MISS=0.14;
+let AC=null,buf=null,src=null,t0=0,playing=false,paused=false;
+let diff='normal',speed=2,offsetMs=0;
+let notes=[],next=0,score=0,combo=0,maxc=0,cP=0,cG=0,cM=0,mental=100,fx=[],judge=null,lanePress=[0,0,0,0],raf=0,ended=false;
+
+function ls(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){return null}}
+offsetMs=+(ls('tofu_ofs')||0); speed=+(ls('tofu_spd')||2); diff=ls('tofu_diff')||'normal';
+$('ofs').value=offsetMs; $('spd').value=speed;
+function syncOpts(){$('ofsv').textContent=(offsetMs>0?'+':'')+offsetMs+'ms';$('spdv').textContent=speed.toFixed(2)+'x';
+  document.querySelectorAll('#diffs .opt').forEach(b=>b.setAttribute('aria-pressed',b.dataset.d===diff))}
+syncOpts();
+$('ofs').oninput=e=>{offsetMs=+e.target.value;ls('tofu_ofs',offsetMs);syncOpts()};
+$('spd').oninput=e=>{speed=+e.target.value;ls('tofu_spd',speed);syncOpts()};
+document.querySelectorAll('#diffs .opt').forEach(b=>b.onclick=()=>{diff=b.dataset.d;ls('tofu_diff',diff);syncOpts();drawIdle()});
+
+// load audio bytes early; decode after first gesture
+let bytes=null;
+fetch('bgm.mp3').then(r=>{if(!r.ok)throw 0;return r.arrayBuffer()}).then(b=>{bytes=b;$('startBtn').disabled=false;$('startBtn').textContent='出勤する'})
+ .catch(()=>{$('startBtn').innerHTML='<span class="loading">音源を読み込めませんでした。再読み込みしてください</span>'});
+
+async function ensureAudio(){
+  if(!AC)AC=new (window.AudioContext||window.webkitAudioContext)();
+  if(AC.state==='suspended')await AC.resume();
+  if(!buf)buf=await AC.decodeAudioData(bytes.slice(0));
+}
+function songTime(){return playing?(AC.currentTime-t0)-offsetMs/1000:0}
+
+async function start(){
+  $('startBtn').disabled=true;
+  try{await ensureAudio()}catch(e){$('startBtn').disabled=false;return}
+  notes=DATA.charts[diff].map(n=>({t:n.t,l:n.l,h:0}));
+  next=0;score=0;combo=0;maxc=0;cP=0;cG=0;cM=0;mental=100;fx=[];judge=null;ended=false;
+  src=AC.createBufferSource();src.buffer=buf;src.connect(AC.destination);
+  const lead=1.6; t0=AC.currentTime+lead; src.start(t0);
+  src.onended=()=>{if(playing&&!ended)finish(true)};
+  playing=true;paused=false;
+  $('title').hidden=true;$('result').hidden=true;$('pauseOv').hidden=true;$('pauseBtn').hidden=false;
+  $('startBtn').disabled=false;
+  updHud();cancelAnimationFrame(raf);loop();
+}
+function stopAudio(){try{src&&src.stop()}catch(e){} src=null}
+async function pause(){if(!playing||paused||ended)return;paused=true;await AC.suspend();$('pauseOv').hidden=false}
+async function resume(){if(!paused)return;$('pauseOv').hidden=true;paused=false;await AC.resume()}
+function quit(){playing=false;paused=false;stopAudio();if(AC&&AC.state==='suspended')AC.resume();$('pauseOv').hidden=true;$('pauseBtn').hidden=true;$('title').hidden=false;drawIdle()}
+
+function form(){return mental>66?'木綿':mental>33?'絹ごし':'おぼろ'}
+function updHud(){
+  $('score').textContent=score.toLocaleString();$('combo').textContent=combo;
+  const g=$('gbar');g.style.width=Math.max(0,mental)+'%';g.style.background=mental>66?'var(--ok)':mental>33?'var(--warn)':'var(--bad)';
+  $('form').textContent=form();
+}
+function setClock(t){const r=Math.min(1,Math.max(0,t/DATA.duration));const m=Math.round(480+r*540);
+  $('clock').textContent=String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0')}
+
+function judgeHit(lane){
+  if(!playing||paused||ended)return;
+  lanePress[lane]=performance.now();
+  const t=songTime();let best=null,bd=1;
+  for(let i=next;i<notes.length;i++){const n=notes[i];if(n.t-t>W_MISS)break;if(n.h||n.l!==lane)continue;const d=Math.abs(n.t-t);if(d<bd){bd=d;best=n}}
+  if(!best||bd>W_MISS)return;
+  best.h=1;
+  if(bd<=W_PERF){cP++;combo++;score+=300+Math.min(combo,100)*2;mental=Math.min(100,mental+1);show('ヨシ！','var(--hazard)')}
+  else if(bd<=W_GOOD){cG++;combo++;score+=150+Math.min(combo,100);mental=Math.min(100,mental+.5);show('まあヨシ','var(--tofu)')}
+  else{miss();return}
+  maxc=Math.max(maxc,combo);burst(lane);updHud();
+}
+const MISS_LINES=['ヨシじゃない！','前にも言ったよね','普通できるでしょ','空気読んで','君のためだよ'];
+function miss(){cM++;combo=0;mental-=diff==='easy'?5:diff==='normal'?6:7;
+  show(cM%4===0?MISS_LINES[1+(cM/4)%4|0]:MISS_LINES[0],'var(--bad)');updHud();
+  if(mental<=0){mental=0;updHud();finish(false)}}
+function show(txt,col){judge={txt,col,at:performance.now()}}
+function burst(l){for(let i=0;i<10;i++)fx.push({l,x:0,y:0,vx:(Math.random()-.5)*5,vy:-Math.random()*5-1,a:1,s:Math.random()*4+2})}
+
+function finish(clear){
+  if(ended)return;ended=true;playing=false;stopAudio();$('pauseBtn').hidden=true;
+  const tot=notes.length,acc=tot?(cP+cG*.5)/tot:0;
+  const st=$('stamp');
+  if(clear){st.textContent='退勤！';st.className='stamp good';
+    $('resMsg').textContent=acc>.95?'完全定時退勤。工程完了、ヨシ！':acc>.85?'木綿のまま帰宅。明日のことなら明日でいい。':acc>.7?'絹ごしくらいで帰れた。帰れりゃ今日は工程完了。':'おぼろだけど、帰れた。勝ちは勝ち。';}
+  else{st.textContent='おから';st.className='stamp';
+    $('resMsg').textContent='メンタル残量ゼロ。'+$('clock').textContent+'に工程停止。';}
+  $('resScore').textContent=score.toLocaleString();
+  $('rP').textContent=cP;$('rG').textContent=cG;$('rM').textContent=cM+(clear?0:0);$('rC').textContent=maxc;
+  const k='tofu_best_'+diff,b=+(ls(k)||0);
+  if(clear&&score>b){ls(k,score);$('best').textContent='自己ベスト更新（'+({easy:'木綿',normal:'絹ごし',hard:'おぼろ'})[diff]+'）';}
+  else $('best').textContent=b?('自己ベスト '+b.toLocaleString()):'';
+  $('result').hidden=false;
+}
+
+// ---- drawing ----
+let Wd=0,Hd=0,dpr=1;
+function resize(){const r=$('stage').getBoundingClientRect();dpr=Math.min(2,window.devicePixelRatio||1);Wd=r.width;Hd=r.height;cv.width=Wd*dpr;cv.height=Hd*dpr;cx.setTransform(dpr,0,0,dpr,0,0);if(!playing)drawIdle()}
+addEventListener('resize',resize);
+const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+let C={};function cols(){C={steel2:css('--steel-2'),steel3:css('--steel-3'),tofu:css('--tofu'),shade:css('--tofu-shade'),haz:css('--hazard'),dim:css('--dim')}}
+function geo(){const lw=Math.min(90,(Wd-24)/LANES);const x0=(Wd-lw*LANES)/2;const hitY=Hd-Math.max(70,Hd*.16);return{lw,x0,hitY}}
+function drawBoard(t){
+  const {lw,x0,hitY}=geo();
+  cx.fillStyle=C.steel2;cx.fillRect(0,0,Wd,Hd);
+  // conveyor belts
+  const pxps=speed*230;
+  for(let i=0;i<LANES;i++){const x=x0+i*lw;
+    cx.fillStyle=i%2?'#202326':'#1d2023';cx.fillRect(x+2,0,lw-4,Hd);
+    const lit=performance.now()-lanePress[i]<120;
+    if(lit){const g=cx.createLinearGradient(0,hitY-160,0,hitY);g.addColorStop(0,'rgba(242,194,48,0)');g.addColorStop(1,'rgba(242,194,48,.22)');cx.fillStyle=g;cx.fillRect(x+2,hitY-160,lw-4,160)}
+    cx.strokeStyle='rgba(255,255,255,.05)';cx.lineWidth=2;
+    const ph=((t*pxps)%36+36)%36;
+    for(let y=-36+ph;y<hitY;y+=36){cx.beginPath();cx.moveTo(x+6,y);cx.lineTo(x+lw-6,y);cx.stroke()}
+  }
+  // press line with hazard stripes
+  cx.save();cx.beginPath();cx.rect(x0,hitY-5,lw*LANES,10);cx.clip();
+  cx.fillStyle='#111';cx.fillRect(x0,hitY-5,lw*LANES,10);cx.fillStyle=C.haz;
+  for(let x=x0-20;x<x0+lw*LANES+20;x+=16){cx.beginPath();cx.moveTo(x,hitY+5);cx.lineTo(x+8,hitY+5);cx.lineTo(x+18,hitY-5);cx.lineTo(x+10,hitY-5);cx.fill()}
+  cx.restore();
+  // lane keys
+  cx.font='13px DotGothic16, monospace';cx.textAlign='center';cx.textBaseline='middle';
+  for(let i=0;i<LANES;i++){const x=x0+i*lw+lw/2;const lit=performance.now()-lanePress[i]<120;
+    cx.fillStyle=lit?C.haz:C.steel3;cx.fillRect(x0+i*lw+6,hitY+16,lw-12,Math.min(44,Hd-hitY-24));
+    cx.fillStyle=lit?'#1b1d1f':C.dim;cx.fillText(KEYS[i].toUpperCase(),x,hitY+16+Math.min(44,Hd-hitY-24)/2)}
+  return{lw,x0,hitY,pxps};
+}
+function tofu(x,y,w,h,sq){
+  cx.fillStyle=C.shade;rr(x,y+3,w,h,6*sq);cx.fill();
+  cx.fillStyle=C.tofu;rr(x,y,w,h,6*sq);cx.fill();
+  cx.fillStyle='rgba(255,255,255,.55)';cx.fillRect(x+6,y+4,w*.35,2);
+}
+function rr(x,y,w,h,r){cx.beginPath();cx.moveTo(x+r,y);cx.arcTo(x+w,y,x+w,y+h,r);cx.arcTo(x+w,y+h,x,y+h,r);cx.arcTo(x,y+h,x,y,r);cx.arcTo(x,y,x+w,y,r);cx.closePath()}
+function loop(){
+  raf=requestAnimationFrame(loop);
+  const t=songTime();
+  // auto-miss
+  while(next<notes.length&&(notes[next].h||t-notes[next].t>W_MISS)){if(!notes[next].h&&playing&&!ended){notes[next].h=2;miss()}next++}
+  setClock(Math.max(0,t));
+  const {lw,x0,hitY,pxps}=drawBoard(t);
+  const sq=mental>66?1:mental>33?1.8:2.6, nh=Math.max(16,lw*.32);
+  for(let i=next;i<notes.length;i++){const n=notes[i];const y=hitY-(n.t-t)*pxps;if(y<-40)break;if(n.h)continue;
+    tofu(x0+n.l*lw+8,y-nh/2,lw-16,nh,sq)}
+  // fx
+  for(const p of fx){p.x+=p.vx;p.y+=p.vy;p.vy+=.25;p.a-=.03;
+    cx.globalAlpha=Math.max(0,p.a);cx.fillStyle=C.tofu;cx.fillRect(x0+p.l*lw+lw/2+p.x,hitY+p.y,p.s,p.s)}
+  cx.globalAlpha=1;fx=fx.filter(p=>p.a>0);
+  if(judge){const age=performance.now()-judge.at;if(age<500){cx.globalAlpha=1-age/500;cx.font='26px "Dela Gothic One", sans-serif';cx.textAlign='center';
+    cx.fillStyle=judge.col.startsWith('var')?css(judge.col.slice(4,-1)):judge.col;
+    cx.fillText(judge.txt,Wd/2,hitY-90-age*.03);cx.globalAlpha=1}}
+  if(t<0){cx.font='22px DotGothic16, monospace';cx.fillStyle=C.haz;cx.textAlign='center';cx.fillText(t<-1.0?'READY?':'ご安全に！',Wd/2,Hd*.4)}
+  if(!playing&&!paused)cancelAnimationFrame(raf);
+}
+function drawIdle(){cols();if(!Wd)return;const {lw,x0,hitY}=drawBoard(0);const nh=Math.max(16,lw*.32);
+  const demo=(DATA.charts[diff]||[]).slice(6,20);for(const n of demo){const y=hitY-(n.t-demo[0].t+.5)*speed*230;if(y>0)tofu(x0+n.l*lw+8,y-nh/2,lw-16,nh,1)}}
+
+// ---- input ----
+addEventListener('keydown',e=>{if(e.repeat)return;const k=e.key.toLowerCase();const i=KEYS.indexOf(k);
+  if(i>=0){e.preventDefault();judgeHit(i)}
+  else if(e.key==='Escape'){paused?resume():pause()}
+  else if((e.key===' '||e.key==='Enter')&&!$('title').hidden&&!$('startBtn').disabled&&document.activeElement.tagName!=='BUTTON'){e.preventDefault();start()}});
+cv.addEventListener('pointerdown',e=>{e.preventDefault();const r=cv.getBoundingClientRect();const {lw,x0}=geo();const i=Math.floor((e.clientX-r.left-x0)/lw);if(i>=0&&i<LANES)judgeHit(i)});
+$('startBtn').onclick=start;$('againBtn').onclick=start;$('menuBtn').onclick=()=>{$('result').hidden=true;$('title').hidden=false;drawIdle()};
+$('pauseBtn').onclick=pause;$('resumeBtn').onclick=resume;$('quitBtn').onclick=quit;
+document.addEventListener('visibilitychange',()=>{if(document.hidden)pause()});
+cols();resize();
+if(document.fonts)document.fonts.ready.then(()=>{if(!playing)drawIdle()});
+</script>
+
+</body>
+</html>
