@@ -252,10 +252,30 @@ function drawBoard(t){
     cx.fillStyle=lit?'#1b1d1f':C.dim;cx.fillText(KEYS[i].toUpperCase(),x,hitY+16+Math.min(44,Hd-hitY-24)/2)}
   return{lw,x0,hitY,pxps};
 }
-function tofu(x,y,w,h,sq){
+function tofu(x,y,w,h,sq,seed){
+  // flatter as mental drops (same idea as the main stage: 木綿 → 絹ごし → おぼろ)
+  const m=(document.getElementById('title').hidden)?mental:100;
+  const f=m>66?1:m>33?.86:.72, nh=h*f, ny=y+(h-nh), ex=(1-f)*w*.06;
+  x-=ex; w+=ex*2; h=nh; y=ny;
   cx.fillStyle=C.shade;rr(x,y+3,w,h,6*sq);cx.fill();
   cx.fillStyle=C.tofu;rr(x,y,w,h,6*sq);cx.fill();
-  cx.fillStyle='rgba(255,255,255,.55)';cx.fillRect(x+6,y+4,w*.35,2);
+  cx.fillStyle='rgba(255,255,255,.55)';cx.fillRect(x+6,y+4,w*.3,2);
+  // face, modeled on the 3D tofu: two dot eyes, arc mouth, pink cheeks when cheerful, sweat when worn out
+  const cxm=x+w/2, u=Math.min(h,w*.5), eyeY=y+h*.4, gap=u*.42;
+  const blink=(((performance.now()/1000)+(seed||0)*1.37)%3.4)<.12;
+  const sad=m<=50;
+  cx.fillStyle='#1b1d1f';
+  const er=Math.max(1.6,u*.075), eh=blink?er*.25:er*1.25*(sad?.8:1);
+  cx.beginPath();cx.ellipse(cxm-gap,eyeY,er,eh,0,0,Math.PI*2);cx.ellipse(cxm+gap,eyeY,er,eh,0,0,Math.PI*2);cx.fill();
+  cx.strokeStyle='#1b1d1f';cx.lineWidth=Math.max(1.2,u*.045);cx.lineCap='round';
+  const mr=u*.13, my=y+h*.66;
+  cx.beginPath();
+  if(sad)cx.arc(cxm,my+mr*.9,mr,Math.PI*1.15,Math.PI*1.85);else cx.arc(cxm,my-mr*.35,mr,Math.PI*.15,Math.PI*.85);
+  cx.stroke();
+  if(m>75){cx.fillStyle='rgba(242,167,160,.85)';const cr=Math.max(1.5,u*.08);
+    cx.beginPath();cx.arc(cxm-gap*1.75,y+h*.6,cr,0,Math.PI*2);cx.arc(cxm+gap*1.75,y+h*.6,cr,0,Math.PI*2);cx.fill()}
+  if(m<=35){const sx=x+w-u*.25,sy=y+h*.25+Math.sin(performance.now()/160+(seed||0))*1.5,sr=Math.max(2,u*.09);
+    cx.fillStyle='rgba(143,208,255,.9)';cx.beginPath();cx.moveTo(sx,sy-sr*1.8);cx.quadraticCurveTo(sx+sr,sy,sx,sy+sr);cx.quadraticCurveTo(sx-sr,sy,sx,sy-sr*1.8);cx.fill()}
 }
 function rr(x,y,w,h,r){cx.beginPath();cx.moveTo(x+r,y);cx.arcTo(x+w,y,x+w,y+h,r);cx.arcTo(x+w,y+h,x,y+h,r);cx.arcTo(x,y+h,x,y,r);cx.arcTo(x,y,x+w,y,r);cx.closePath()}
 function loop(){
@@ -265,9 +285,9 @@ function loop(){
   while(next<notes.length&&(notes[next].h||t-notes[next].t>W_MISS)){if(!notes[next].h&&playing&&!ended){notes[next].h=2;miss()}next++}
   setClock(Math.max(0,t));
   const {lw,x0,hitY,pxps}=drawBoard(t);
-  const sq=mental>66?1:mental>33?1.8:2.6, nh=Math.max(16,lw*.32);
+  const sq=mental>66?1:mental>33?1.8:2.6, nh=Math.max(20,lw*.44);
   for(let i=next;i<notes.length;i++){const n=notes[i];const y=hitY-(n.t-t)*pxps;if(y<-40)break;if(n.h)continue;
-    tofu(x0+n.l*lw+8,y-nh/2,lw-16,nh,sq)}
+    tofu(x0+n.l*lw+8,y-nh/2,lw-16,nh,sq,i)}
   // fx
   for(const p of fx){p.x+=p.vx;p.y+=p.vy;p.vy+=.25;p.a-=.03;
     cx.globalAlpha=Math.max(0,p.a);cx.fillStyle=C.tofu;cx.fillRect(x0+p.l*lw+lw/2+p.x,hitY+p.y,p.s,p.s)}
@@ -278,8 +298,8 @@ function loop(){
   if(t<0){cx.font='22px DotGothic16, monospace';cx.fillStyle=C.haz;cx.textAlign='center';cx.fillText(t<-1.0?'READY?':'ご安全に！',Wd/2,Hd*.4)}
   if(!playing&&!paused)cancelAnimationFrame(raf);
 }
-function drawIdle(){cols();if(!Wd)return;const {lw,x0,hitY}=drawBoard(0);const nh=Math.max(16,lw*.32);
-  const demo=(DATA.charts[diff]||[]).slice(6,20);for(const n of demo){const y=hitY-(n.t-demo[0].t+.5)*speed*230;if(y>0)tofu(x0+n.l*lw+8,y-nh/2,lw-16,nh,1)}}
+function drawIdle(){cols();if(!Wd)return;const {lw,x0,hitY}=drawBoard(0);const nh=Math.max(20,lw*.44);
+  const demo=(DATA.charts[diff]||[]).slice(6,20);for(const n of demo){const y=hitY-(n.t-demo[0].t+.5)*speed*230;if(y>0)tofu(x0+n.l*lw+8,y-nh/2,lw-16,nh,1,n.t)}}
 
 // ---- input ----
 addEventListener('keydown',e=>{if(e.repeat)return;const k=e.key.toLowerCase();const i=KEYS.indexOf(k);
