@@ -74,6 +74,10 @@ h1 .st{display:block;font-size:clamp(20px,5.6vw,30px);color:var(--neon);margin-t
 .result{font-size:15px;line-height:1.9;margin-top:6px;font-variant-numeric:tabular-nums}
 .result b{color:var(--hazard)}
 .note{font-size:12px;color:var(--muted);margin-top:12px}
+.fireBtn{position:fixed;right:16px;bottom:calc(env(safe-area-inset-bottom,0px) + 18px);width:96px;height:96px;border-radius:50%;border:3px solid var(--neon);background:rgba(14,16,30,.55);color:var(--neon);font:700 16px var(--f-ui);display:none;align-items:center;justify-content:center;z-index:8;touch-action:none;pointer-events:auto}
+.fireBtn.on{background:rgba(94,224,255,.35)}
+.padHint{position:fixed;left:16px;bottom:calc(env(safe-area-inset-bottom,0px) + 128px);font-size:12px;color:var(--muted);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:6px 10px;display:none;pointer-events:none;z-index:6}
+.touch .fireBtn{display:flex}.touch .padHint{display:block}
 @media (prefers-reduced-motion:reduce){.fill,.toast,.combo{transition:none}}
 </style>
 </head>
@@ -81,6 +85,8 @@ h1 .st{display:block;font-size:clamp(20px,5.6vw,30px);color:var(--neon);margin-t
 <canvas id="c" aria-label="ゲーム画面"></canvas>
 <div class="flash" id="flash"></div>
 <div class="cross" id="cross"><i></i></div>
+<button class="fireBtn" id="fireBtn" type="button">発射</button>
+<div class="padHint" id="padHint">画面のどこでもなぞって照準を動かす</div>
 
 <div class="hud">
   <div class="box mental">
@@ -107,7 +113,8 @@ h1 .st{display:block;font-size:clamp(20px,5.6vw,30px);color:var(--neon);margin-t
     <div class="stripe"></div>
     <p class="lead">黙って受け止めるのは今日まで。<br>奥から迫る言葉と着信ドローンを、豆腐で撃ち返せ。1分耐えると部長が来る。</p>
     <div class="keys">
-      <b>タップ / クリック</b><span>その場所に撃つ（押しっぱなしで連射）</span>
+      <b>パソコン</b><span>クリックした場所に撃つ（押しっぱなしで連射）</span>
+      <b>スマホ</b><span>画面のどこでもなぞって照準を動かし、右下の発射ボタンで撃つ（近くの敵に照準が吸い付く）</span>
       <b>言葉</b><span>当たると −12。届く前に撃ち落とす</span>
       <b>ドローン</b><span>2発で撃墜。言葉を撃ってくる</span>
       <b>醤油</b><span>撃つとメンタル ＋15</span>
@@ -216,7 +223,7 @@ function buildScenery(){
 let blaster=null;
 function buildBlaster(){
   blaster=model('blaster',.95,{byDepth:true,center:true});
-  blaster.position.set(.32,-.32,-.75);
+  blaster.position.set(.32,-.32,-.75); blaster.userData.s0=blaster.scale.x;
   blaster.traverse(o=>{if(o.isMesh){o.material=o.material.clone();o.material.depthTest=true;o.renderOrder=10}});
   camera.add(blaster);
 }
@@ -313,19 +320,53 @@ showBest();
 /* ---------- input: aim + fire ---------- */
 const aim=new THREE.Vector2(0,0); let firing=false,fireCd=0;
 const cross=$('#cross');
-function setAim(e){aim.x=e.clientX/innerWidth*2-1;aim.y=-(e.clientY/innerHeight)*2+1;cross.style.transform=`translate(${e.clientX}px,${e.clientY}px)`}
-cross.style.transform=`translate(${innerWidth/2}px,${innerHeight/2}px)`;
-canvas.addEventListener('pointerdown',e=>{if(state!=='play')return;e.preventDefault();try{canvas.setPointerCapture(e.pointerId)}catch(_){}setAim(e);firing=true});
-canvas.addEventListener('pointermove',e=>{setAim(e)});
-const stop=()=>{firing=false};
-canvas.addEventListener('pointerup',stop);canvas.addEventListener('pointercancel',stop);
+let cx=innerWidth/2, cy=innerHeight*.45, touchMode=matchMedia('(pointer:coarse)').matches;
+function setTouchMode(on){touchMode=on;document.body.classList.toggle('touch',on)}
+setTouchMode(touchMode);
+function placeCross(x,y){cx=Math.max(8,Math.min(innerWidth-8,x));cy=Math.max(8,Math.min(innerHeight-8,y));aim.x=cx/innerWidth*2-1;aim.y=-(cy/innerHeight)*2+1;cross.style.transform=`translate(${cx}px,${cy}px)`}
+placeCross(cx,cy);
+addEventListener('resize',()=>placeCross(Math.min(cx,innerWidth),Math.min(cy,innerHeight)));
+// mouse: aim where you point. touch: the screen is a trackpad, so the finger never covers the target
+const drags=new Map();
+canvas.addEventListener('pointerdown',e=>{
+  if(state!=='play')return; e.preventDefault(); try{canvas.setPointerCapture(e.pointerId)}catch(_){}
+  if(e.pointerType==='touch'||e.pointerType==='pen'){if(!touchMode)setTouchMode(true);drags.set(e.pointerId,{x:e.clientX,y:e.clientY})}
+  else{placeCross(e.clientX,e.clientY);firing=true}
+});
+canvas.addEventListener('pointermove',e=>{
+  const d=drags.get(e.pointerId);
+  if(d){$('#padHint').style.opacity=0;const k=1.6;placeCross(cx+(e.clientX-d.x)*k,cy+(e.clientY-d.y)*k);d.x=e.clientX;d.y=e.clientY;return}
+  if(e.pointerType==='mouse')placeCross(e.clientX,e.clientY);
+});
+const endDrag=e=>{if(drags.has(e.pointerId))drags.delete(e.pointerId);else firing=false};
+canvas.addEventListener('pointerup',endDrag);canvas.addEventListener('pointercancel',endDrag);
+const fb=$('#fireBtn');
+fb.addEventListener('pointerdown',e=>{e.preventDefault();try{fb.setPointerCapture(e.pointerId)}catch(_){}if(state==='play'){firing=true;fb.classList.add('on')}});
+const fbUp=()=>{firing=false;fb.classList.remove('on')};
+fb.addEventListener('pointerup',fbUp);fb.addEventListener('pointercancel',fbUp);fb.addEventListener('lostpointercapture',fbUp);
+fb.addEventListener('contextmenu',e=>e.preventDefault());
+const stop=()=>{firing=false;fb.classList.remove('on');drags.clear()};
 addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();if(state==='play')firing=true;else if(state!=='dead'&&ready&&!e.repeat)start()}});
 addEventListener('keyup',e=>{if(e.code==='Space')firing=false});
 addEventListener('blur',stop);
 const ray=new THREE.Raycaster(),tmp=new THREE.Vector3();
+const scr=new THREE.Vector3();
+function assistTarget(){
+  if(!touchMode)return null;
+  let best=null,bd=80*80;
+  for(const f of foes){
+    if(f.type==='shoyu'&&mental>=100)continue;
+    scr.copy(f.obj.position).project(camera); if(scr.z>1)continue;
+    const sx=(scr.x+1)/2*innerWidth, sy=(1-scr.y)/2*innerHeight, d=(sx-cx)**2+(sy-cy)**2;
+    const r=f.type==='boss'?140*140:bd; if(d<Math.max(bd,r)&&(!best||d<best.d))best={f,d};
+  }
+  return best&&best.f;
+}
 function fire(){
   ray.setFromCamera(aim,camera);
-  const target=ray.ray.at(60,new THREE.Vector3());
+  let target=ray.ray.at(60,new THREE.Vector3());
+  const lock=assistTarget();
+  if(lock){target=lock.obj.position.clone();if(lock.v)target.addScaledVector(lock.v,target.distanceTo(camera.position)/70)}
   const from=camera.localToWorld(new THREE.Vector3(.3,-.2,-1.15));
   const m=new THREE.Mesh(bulletGeo,bulletMat);m.position.copy(from);scene.add(m);
   const v=target.sub(from).normalize().multiplyScalar(70);
@@ -464,7 +505,7 @@ function frame(){
   camera.rotation.x+=((aim.y*.08)-camera.rotation.x)*Math.min(1,dt*5);
   camera.position.set((Math.random()-.5)*sk,1.6+Math.sin(performance.now()/180)*.02+(Math.random()-.5)*sk,0);
   kick=Math.max(0,kick-dt*10); muzzleLight.intensity=Math.max(0,muzzleLight.intensity-dt*30);
-  if(blaster){blaster.position.z=-.75+kick*.08;blaster.rotation.x=kick*.12}
+  if(blaster){const pt=camera.aspect<1;blaster.scale.setScalar(blaster.userData.s0*(pt?.55:1));blaster.position.set(pt?.2:.32,pt?-.3:-.32,-.75+kick*.08);blaster.rotation.x=kick*.12}
   if(toastT>0){toastT-=dt;if(toastT<=0)$('#toast').classList.remove('on')}
   renderer.render(scene,camera);
 }
