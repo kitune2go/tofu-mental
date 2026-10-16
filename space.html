@@ -70,7 +70,18 @@ h1 .st{display:block;font-size:clamp(18px,5vw,26px);color:var(--signal);margin-t
 .result{font-size:15px;line-height:1.9;margin-top:6px;font-variant-numeric:tabular-nums}
 .result b{color:var(--hazard)}
 .note{font-size:12px;color:var(--muted);margin-top:12px}
-@media (prefers-reduced-motion:reduce){.fill,.toast,.combo{transition:none}}
+.thru{margin-top:8px}
+.thru .fill{background:var(--hazard);width:0}
+.thru.full .fill{background:var(--signal);animation:pulse .6s ease-in-out infinite alternate}
+.thru.full .lbl span:first-child{color:var(--signal)}
+@keyframes pulse{from{filter:brightness(1)}to{filter:brightness(1.6)}}
+.kidoku{position:fixed;right:16px;bottom:calc(env(safe-area-inset-bottom,0px) + 76px);z-index:7;width:84px;height:84px;border-radius:50%;border:3px solid #fff6f2;background:var(--signal);color:#14060d;font-family:var(--f-display);font-size:15px;line-height:1.15;box-shadow:0 0 0 6px rgba(255,79,163,.25),0 4px 0 #8a1f55;cursor:pointer;animation:pulse .6s ease-in-out infinite alternate;touch-action:manipulation}
+.kidoku:active{transform:translateY(3px)}
+.kidoku:focus-visible{outline:2px solid var(--hazard);outline-offset:3px}
+.wave{position:fixed;inset:0;pointer-events:none;z-index:4;background:radial-gradient(circle at 50% 55%,rgba(255,246,242,.0) 0,rgba(255,246,242,0) 100%);opacity:0}
+.wave.on{opacity:1;background:radial-gradient(circle at 50% 55%,rgba(255,246,242,.85) 0,rgba(255,79,163,.35) 45%,rgba(255,79,163,0) 75%);transition:none}
+.wave.off{opacity:0;transition:opacity .5s ease-out}
+@media (prefers-reduced-motion:reduce){.fill,.toast,.combo{transition:none}.kidoku,.thru.full .fill{animation:none}}
 </style>
 </head>
 <body>
@@ -81,6 +92,10 @@ h1 .st{display:block;font-size:clamp(18px,5vw,26px);color:var(--signal);margin-t
   <div class="box mental">
     <div class="lbl"><span>メンタル</span><span><span class="tier" id="tier">木綿</span> <span id="mval">100</span></span></div>
     <div class="bar"><div class="fill" id="fill"></div></div>
+    <div class="thru" id="thruBox">
+      <div class="lbl"><span>スルー力</span><span id="thruVal">0</span></div>
+      <div class="bar"><div class="fill" id="thruFill"></div></div>
+    </div>
     <div class="boss" id="bossBox" hidden>
       <div class="lbl"><span>本社衛星</span><span id="bossVal"></span></div>
       <div class="bar"><div class="fill" id="bossFill"></div></div>
@@ -95,6 +110,8 @@ h1 .st{display:block;font-size:clamp(18px,5vw,26px);color:var(--signal);margin-t
 </div>
 <div class="combo" id="combo"></div>
 <div class="toast" id="toast"></div>
+<div class="wave" id="wave"></div>
+<button class="kidoku" id="kidokuBtn" type="button" hidden>既読<br>スルー</button>
 
 <div class="overlay" id="ovTitle">
   <div class="card">
@@ -106,6 +123,9 @@ h1 .st{display:block;font-size:clamp(18px,5vw,26px);color:var(--signal);margin-t
       <b>ドラッグ / 矢印キー</b><span>豆腐号を動かす（弾は自動で出る）</span>
       <b>タスク隕石</b><span>ぶつかると −20。撃てば砕ける</span>
       <b>通知衛星</b><span>通知を飛ばしてくる。当たると −12</span>
+      <b>すれすれ回避</b><span>通知や隕石を紙一重でかわすと「スルー力」が溜まる</span>
+      <b>既読スルー</b><span>スルー力が満タンで、ダブルタップ / ボタン / Space。通知を全部既読にして消す</span>
+      <b>本社衛星</b><span>両脇のソーラーパネルが弱点。壊すと大ダメージ</span>
       <b>有給リング</b><span>くぐるとメンタル ＋12</span>
     </div>
     <div class="btns">
@@ -206,10 +226,25 @@ const bullets=[],foes=[],pops=[],debris=[];
 const bulletGeo=new THREE.BoxGeometry(.18,.18,.5), bulletMat=new THREE.MeshBasicMaterial({color:0xfffbe8});
 const rockMat=new THREE.MeshStandardMaterial({color:0x8a7f74,roughness:1,flatShading:true});
 const tagTex=ctex(256,64,(g,w,h)=>{g.fillStyle='#e5483c';g.fillRect(0,0,w,h);g.fillStyle='#fff';g.font='bold 34px "M PLUS 1 Code",sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText('タスク',w/2,h/2+2)});
+const signTexCache={};
+function signTex(word){return signTexCache[word]||(signTexCache[word]=ctex(512,128,(c,w,h)=>{c.fillStyle='#14060d';c.fillRect(0,0,w,h);c.fillStyle='#ff4fa3';c.font='bold 72px "Dela Gothic One","Hiragino Sans",sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillText(word,w/2,h/2+4)}))}
+const panelTex=ctex(256,128,(g,w,h)=>{g.strokeStyle='rgba(240,185,43,.9)';g.lineWidth=4;g.strokeRect(4,4,w-8,h-8);g.strokeStyle='rgba(140,180,255,.45)';g.lineWidth=2;for(let x=32;x<w;x+=32){g.beginPath();g.moveTo(x,6);g.lineTo(x,h-6);g.stroke()}for(let y=32;y<h;y+=32){g.beginPath();g.moveTo(6,y);g.lineTo(w-6,y);g.stroke()}});
 let boss=null;
+const tmpV=new THREE.Vector3();
+function posOf(f){return f.type==='panel'?f.obj.getWorldPosition(tmpV):f.obj.position}
+// hit feedback: emissive flash + a small scale punch
+function flashFoe(f,amt){
+  if(!f.mats){f.mats=[];f.obj.traverse(o=>{if(o.isMesh&&o.material.emissive)f.mats.push({m:o.material,e:o.material.emissive.getHex()})})}
+  for(const x of f.mats)x.m.emissive.setHex(0xffffff);
+  f.flashT=.07; f.punch=amt===undefined?.18:amt;
+}
+function tickFoeFx(f,dt){
+  if(f.flashT>0){f.flashT-=dt;if(f.flashT<=0)for(const x of f.mats)x.m.emissive.setHex(x.e)}
+  if(f.punch>0){f.punch=Math.max(0,f.punch-dt*1.6);f.obj.scale.setScalar(1+f.punch)}
+}
 function rockGeo(r){const g=new THREE.IcosahedronGeometry(r,1),p=g.attributes.position,v=new THREE.Vector3();for(let i=0;i<p.count;i++){v.fromBufferAttribute(p,i);v.multiplyScalar(.8+Math.random()*.35);p.setXYZ(i,v.x,v.y,v.z)}g.computeVertexNormals();return g}
 function spawnRock(){
-  const r=.8+Math.random()*1.3, m=new THREE.Mesh(rockGeo(r),rockMat);
+  const r=.8+Math.random()*1.3, m=new THREE.Mesh(rockGeo(r),rockMat.clone());
   const tag=new THREE.Sprite(new THREE.SpriteMaterial({map:tagTex,transparent:true})); tag.scale.set(r*1.4,r*.35,1); tag.position.y=r*1.05; m.add(tag);
   m.position.set((Math.random()-.5)*BX*2.2,(Math.random()-.5)*BY*2.2,-140);
   scene.add(m);
@@ -241,12 +276,19 @@ function spawnBoss(){
   const g=new THREE.Group();
   const core=new THREE.Mesh(new THREE.CylinderGeometry(3,3,2,8),new THREE.MeshStandardMaterial({color:0x9aa2b8,metalness:.7,roughness:.3})); core.rotation.x=Math.PI/2; g.add(core);
   const ring=new THREE.Mesh(new THREE.TorusGeometry(5,.35,8,48),new THREE.MeshStandardMaterial({color:0xff4fa3,emissive:0x5a0f33})); g.add(ring);
-  for(const s of[-1,1]){const p=new THREE.Mesh(new THREE.BoxGeometry(5,.12,2.4),new THREE.MeshStandardMaterial({color:0x2a4a9a,metalness:.4,emissive:0x0a1430}));p.position.x=7.5*s;g.add(p)}
-  const sign=ctex(512,128,(c,w,h)=>{c.fillStyle='#14060d';c.fillRect(0,0,w,h);c.fillStyle='#ff4fa3';c.font='bold 72px "Dela Gothic One","Hiragino Sans",sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillText('本社',w/2,h/2+4)});
-  const face=new THREE.Mesh(new THREE.PlaneGeometry(4,1),new THREE.MeshBasicMaterial({map:sign})); face.position.z=1.02; g.add(face);
+  const face=new THREE.Mesh(new THREE.PlaneGeometry(4,1),new THREE.MeshBasicMaterial({map:signTex('本社')})); face.position.z=1.02; g.add(face);
   g.position.set(0,1,-150); scene.add(g);
-  boss={type:'boss',obj:g,r:4.2,hp:40,max:40,t:0,fire:2,pts:5000,ring};
-  foes.push(boss); $('#bossBox').hidden=false; toast('本社衛星が追ってきた！','bad'); sfx('boss');
+  boss={type:'boss',obj:g,r:4.2,hp:70,max:70,t:0,fire:2,pts:5000,ring,face,demoted:false};
+  foes.push(boss);
+  // weak points: solar panels, turned to face the player
+  for(const s of[-1,1]){
+    const p=new THREE.Mesh(new THREE.BoxGeometry(5,2.4,.14),new THREE.MeshStandardMaterial({color:0x2a4a9a,metalness:.4,emissive:0x0a1430}));
+    p.position.set(7.5*s,0,0); g.add(p);
+    const grid=new THREE.Mesh(new THREE.PlaneGeometry(4.6,2.1),new THREE.MeshBasicMaterial({map:panelTex,transparent:true})); grid.position.z=.08; p.add(grid);
+    const lab=sprite('弱点',1.5,'#f0b92b'); lab.position.set(7.5*s,2.3,0); g.add(lab);
+    foes.push({type:'panel',obj:p,lab,side:s,hp:10,pts:1500});
+  }
+  $('#bossBox').hidden=false; toast('本社衛星が追ってきた！ 両脇のパネルを狙え','bad'); sfx('boss');
 }
 
 /* ---------- audio ---------- */
@@ -263,6 +305,10 @@ function sfx(k){
     else if(k==='heal'){o.type='triangle';[660,880,1100].forEach((f,i)=>o.frequency.setValueAtTime(f,t+i*.07));env(.09,.3)}
     else if(k==='boss'){o.type='square';o.frequency.setValueAtTime(110,t);o.frequency.setValueAtTime(82,t+.25);env(.1,.6)}
     else if(k==='die'){o.type='sawtooth';o.frequency.setValueAtTime(320,t);o.frequency.exponentialRampToValueAtTime(40,t+.9);env(.1,.95)}
+    else if(k==='graze'){o.type='sine';o.frequency.setValueAtTime(1400,t);o.frequency.exponentialRampToValueAtTime(2200,t+.06);env(.05,.08)}
+    else if(k==='ready'){o.type='triangle';[880,1320].forEach((f,i)=>o.frequency.setValueAtTime(f,t+i*.08));env(.08,.22)}
+    else if(k==='bomb'){o.type='sawtooth';o.frequency.setValueAtTime(90,t);o.frequency.exponentialRampToValueAtTime(1600,t+.35);env(.14,.5)}
+    else if(k==='crack'){o.type='square';o.frequency.setValueAtTime(300,t);o.frequency.exponentialRampToValueAtTime(60,t+.3);env(.14,.36)}
     else if(k==='clear'){o.type='triangle';[523,659,784,1046,1318].forEach((f,i)=>o.frequency.setValueAtTime(f,t+i*.12));env(.1,.8)}
   }catch(e){}
 }
@@ -287,24 +333,55 @@ showBest();
 /* ---------- input ---------- */
 const goal=new THREE.Vector2(0,0); const keys={};
 let drag=null;
-canvas.addEventListener('pointerdown',e=>{if(state!=='play')return;e.preventDefault();try{canvas.setPointerCapture(e.pointerId)}catch(_){}drag={x:e.clientX,y:e.clientY,gx:goal.x,gy:goal.y}});
+canvas.addEventListener('pointerdown',e=>{if(state!=='play')return;e.preventDefault();
+  const now=performance.now(); if(now-lastTap<300&&thru>=THRU_MAX){lastTap=0;kidoku()}else lastTap=now;try{canvas.setPointerCapture(e.pointerId)}catch(_){}drag={x:e.clientX,y:e.clientY,gx:goal.x,gy:goal.y}});
 canvas.addEventListener('pointermove',e=>{
   if(drag){const k=Math.max(innerWidth,innerHeight);goal.x=Math.max(-BX,Math.min(BX,drag.gx+(e.clientX-drag.x)/k*22));goal.y=Math.max(-BY,Math.min(BY,drag.gy-(e.clientY-drag.y)/k*22))}
   else if(e.pointerType==='mouse'&&state==='play'){goal.x=(e.clientX/innerWidth*2-1)*BX;goal.y=-(e.clientY/innerHeight*2-1)*BY}
 });
 const endDrag=()=>{drag=null};
 canvas.addEventListener('pointerup',endDrag);canvas.addEventListener('pointercancel',endDrag);
-addEventListener('keydown',e=>{keys[e.code]=true;if((e.code==='Space'||e.code==='Enter')&&state!=='play'&&state!=='dead'&&!e.repeat){e.preventDefault();start()}});
+$('#kidokuBtn').addEventListener('click',kidoku);
+addEventListener('keydown',e=>{keys[e.code]=true;
+  if(state==='play'&&!e.repeat&&(e.code==='Space'||e.code==='KeyB'||e.code==='KeyX')){e.preventDefault();kidoku();return}if((e.code==='Space'||e.code==='Enter')&&state!=='play'&&state!=='dead'&&!e.repeat){e.preventDefault();start()}});
 addEventListener('keyup',e=>{keys[e.code]=false});
 addEventListener('blur',()=>{for(const k in keys)keys[k]=false;drag=null});
 
 /* ---------- state ---------- */
 let state='title',elapsed=0,mental=100,score=0,combo=0,shots=0,hits=0,inv=0,shake=0,fireCd=0,spawnR=1,spawnS=5,spawnG=8,km=TRIP,rings=0;
+let thru=0,grazes=0,bombs=0,hitStop=0,lastTap=0;
+const THRU_MAX=100;
+
+/* ---------- graze & kidoku (bomb) ---------- */
+function popWord(t,at,col){const s=sprite(t,.6,col||'#f0b92b');s.position.copy(at);scene.add(s);pops.push({s,life:.8})}
+function graze(f,at){
+  const was=thru; thru=Math.min(THRU_MAX,thru+(f.type==='shot'?20:12)); grazes++;
+  score+=Math.round(60*(1+Math.min(combo,30)*.1));
+  sfx('graze'); popWord('スルー',at);
+  if(was<THRU_MAX&&thru>=THRU_MAX){sfx('ready');toast('スルー力 満タン！ 既読スルーできる','good')}
+}
+function kidoku(){
+  if(state!=='play'||thru<THRU_MAX)return;
+  thru=0; bombs++; inv=Math.max(inv,1.4); shake=.9; hitStop=.12;
+  sfx('bomb'); toast('既読スルー！','good');
+  const w=$('#wave'); w.className='wave on'; requestAnimationFrame(()=>requestAnimationFrame(()=>w.className='wave off'));
+  for(let i=foes.length-1;i>=0;i--){
+    if(state!=='play')break;
+    const f=foes[i]; if(!f)continue; const p=posOf(f);
+    if(f.type==='shot'){popWord('既読',p.clone(),'#f6f3ea');burst(p,5,0xff4fa3);score+=40;kill(f)}
+    else if(f.type==='rock'&&p.z>-70){burst(p,10,0x8a7f74);addScore(f.pts,p.clone());kill(f)}
+    else if(f.type==='sat'&&p.z>-70){f.hp=Math.max(0,f.hp-2);flashFoe(f);if(f.hp<=0){burst(p,8,0xff4fa3);addScore(f.pts,p.clone());kill(f)}}
+    else if(f.type==='panel'){damageFoe(f,4)}
+    else if(f.type==='boss'){damageFoe(f,4)}
+  }
+  hud(true);
+}
 function clearAll(){for(const f of foes)scene.remove(f.obj);foes.length=0;for(const b of bullets)scene.remove(b.m);bullets.length=0;for(const p of pops)scene.remove(p.s);pops.length=0;boss=null}
 function start(){
   if(!ac){try{ac=new (window.AudioContext||window.webkitAudioContext)()}catch(e){}}
   if(ac&&ac.state==='suspended')ac.resume();
   clearAll(); elapsed=0; mental=100; score=0; combo=0; shots=0; hits=0; inv=0; spawnR=1; spawnS=5; spawnG=8; km=TRIP; rings=0;
+  thru=0; grazes=0; bombs=0; hitStop=0; lastTap=0;
   goal.set(0,0); ship.position.set(0,0,0); ship.visible=true;
   $('#bossBox').hidden=true; $('#ovTitle').hidden=true; $('#ovEnd').hidden=true;
   bgmPlay(); state='play'; toast('発射！ 月の裏で有給を','good'); hud(true);
@@ -320,7 +397,7 @@ function hurt(n,label){
 }
 function burst(pos,n,col){for(let i=0;i<n;i++){const m=new THREE.Mesh(new THREE.BoxGeometry(.2,.2,.2),new THREE.MeshBasicMaterial({color:col}));m.position.copy(pos);scene.add(m);debris.push({m,v:new THREE.Vector3((Math.random()-.5)*14,(Math.random()-.5)*14,(Math.random()-.5)*14),life:.8})}}
 function addScore(base,at){
-  combo++; comboT=2; hits++;
+  combo++; comboT=2;
   score+=Math.round(base*(1+Math.min(combo,30)*.1));
   if(combo>=3){const c=$('#combo');c.textContent=combo+' COMBO!!';c.classList.add('on')}
   if(Math.random()<.5){const s=sprite(COMEBACK[(Math.random()*COMEBACK.length)|0],.7,'#f6f3ea');s.position.copy(at);scene.add(s);pops.push({s,life:.8})}
@@ -335,7 +412,8 @@ function end(won){
     $('#endKicker').textContent=won?'本社衛星 撃破／月面着陸':'メンタル崩壊';
     $('#endTitle').textContent=title;
     $('#endLead').textContent=won?'ここは圏外。通知はもう届かない。少なくとも月曜までは。':`月まであと ${Math.round(km).toLocaleString()} km。宇宙でも、仕事は追いかけてくる。`;
-    $('#endResult').innerHTML=`スコア <b>${score.toLocaleString()}</b>${nb?'（自己ベスト）':''}<br>命中率 <b>${acc}%</b>　有給リング <b>${rings}</b>　残りメンタル <b>${Math.ceil(mental)}</b>`;
+    $('#endResult').innerHTML=`スコア <b>${score.toLocaleString()}</b>${nb?'（自己ベスト）':''}<br>命中率 <b>${acc}%</b>　有給リング <b>${rings}</b>　残りメンタル <b>${Math.ceil(mental)}</b><br>すれすれ回避 <b>${grazes}</b>　既読スルー <b>${bombs}</b>`;
+    hud(true);
     const txt=won?`豆腐号、月面着陸！\n称号【${title}】\nスコア${score.toLocaleString()}／命中率${acc}%\n#すり潰されて豆腐メンタル`:`宇宙まで逃げたけど崩れた……\n月まであと${Math.round(km).toLocaleString()}km／スコア${score.toLocaleString()}\n#すり潰されて豆腐メンタル`;
     $('#shareBtn').href='https://x.com/intent/post?text='+encodeURIComponent(txt)+'&url='+encodeURIComponent(SITE);
     $('#ovEnd').hidden=false; showBest();
@@ -344,7 +422,10 @@ function end(won){
 let lastHud='';
 function hud(force){
   const m=Math.ceil(mental);
-  const key=m+'|'+score+'|'+Math.round(km/100)+'|'+(boss?boss.hp:0); if(!force&&key===lastHud)return; lastHud=key;
+  const key=m+'|'+score+'|'+Math.round(km/100)+'|'+(boss?boss.hp:0)+'|'+Math.floor(thru)+'|'+state; if(!force&&key===lastHud)return; lastHud=key;
+  const full=thru>=THRU_MAX&&state==='play';
+  $('#thruFill').style.width=thru+'%'; $('#thruVal').textContent=full?'満タン':Math.floor(thru);
+  $('#thruBox').classList.toggle('full',full); $('#kidokuBtn').hidden=!full;
   $('#mval').textContent=m; $('#tier').textContent=tierOf(m);
   const f=$('#fill'); f.style.width=m+'%'; f.style.backgroundColor=m>50?'var(--tofu)':m>25?'var(--hazard)':'var(--alert)';
   $('#km').textContent=Math.max(0,Math.round(km)).toLocaleString()+' km';
@@ -377,17 +458,15 @@ function update(dt){
     const b=bullets[i]; b.life-=dt; let hit=null;
     for(let k=0;k<4&&!hit;k++){
       b.m.position.z-=95*dt/4;
-      for(const f of foes){if(f.type==='ring')continue;const p=f.obj.position;const dx=b.m.position.x-p.x,dy=b.m.position.y-p.y,dz=b.m.position.z-p.z;
-        if(f.type==='shot'?(Math.abs(dx)<f.obj.scale.x/2+.2&&Math.abs(dy)<.5&&Math.abs(dz)<1.5):(dx*dx+dy*dy+dz*dz<f.r*f.r)){hit=f;break}}
+      for(const f of foes){if(f.type==='ring')continue;const p=posOf(f);const dx=b.m.position.x-p.x,dy=b.m.position.y-p.y,dz=b.m.position.z-p.z;
+        const ok=f.type==='shot'?(Math.abs(dx)<f.obj.scale.x/2+.2&&Math.abs(dy)<.5&&Math.abs(dz)<1.5)
+          :f.type==='panel'?(Math.abs(dx)<2.6&&Math.abs(dy)<1.3&&Math.abs(dz)<1.4)
+          :(dx*dx+dy*dy+dz*dz<f.r*f.r);
+        if(ok){hit=f;break}}
     }
     if(hit){
-      scene.remove(b.m);bullets.splice(i,1);hit.hp--;
-      if(hit.hp<=0){
-        sfx(hit.type==='shot'?'pop':'boom'); addScore(hit.pts,hit.obj.position.clone());
-        burst(hit.obj.position,hit.type==='boss'?40:hit.type==='rock'?10:6,hit.type==='rock'?0x8a7f74:0xff4fa3);
-        kill(hit);
-        if(hit.type==='boss'){boss=null;end(true);return}
-      }else{sfx('pop');hits++}
+      scene.remove(b.m);bullets.splice(i,1);hits++;
+      if(damageFoe(hit,1))return;
       continue;
     }
     if(b.life<=0){scene.remove(b.m);bullets.splice(i,1)}
@@ -395,7 +474,9 @@ function update(dt){
   // foes
   const sp=ship.position;
   for(let i=foes.length-1;i>=0;i--){
-    const f=foes[i],p=f.obj.position;
+    const f=foes[i]; if(!f)continue; const p=f.obj.position;
+    tickFoeFx(f,dt);
+    if(f.type==='panel'){continue}
     if(f.type==='rock'){p.z+=SCROLL*dt;p.addScaledVector(f.drift,dt);f.obj.rotation.x+=f.spin.x*dt;f.obj.rotation.y+=f.spin.y*dt}
     else if(f.type==='ring'){p.z+=SCROLL*dt;f.obj.rotation.z+=dt;
       if(p.z>-.5&&!f.done){f.done=true;if(Math.hypot(p.x-sp.x,p.y-sp.y)<1.8){rings++;mental=Math.min(100,mental+12);sfx('heal');toast('有給を取った　＋12','good')}}}
@@ -404,18 +485,60 @@ function update(dt){
       f.fire-=dt; if(f.fire<=0&&p.z>-80){spawnShot(p.clone(),WORDS[(Math.random()*WORDS.length)|0],'#ff4fa3',20+elapsed*.08);f.fire=2.2+Math.random()*1.2}}
     else if(f.type==='shot'){p.addScaledVector(f.v,dt)}
     else if(f.type==='boss'){f.t+=dt;if(p.z<-45)p.z+=dt*20;p.x=Math.sin(f.t*.6)*4.5;p.y=1+Math.sin(f.t*.9)*1.6;f.ring.rotation.z+=dt*(f.hp<f.max/2?2.4:1.2);
+      f.obj.rotation.z+=((f.lean||0)+Math.sin(f.t*1.3)*.05-f.obj.rotation.z)*Math.min(1,dt*3);
+      if(!f.demoted&&f.hp<=f.max/2){f.demoted=true;f.face.material.map=signTex('支社');f.face.material.needsUpdate=true;flashFoe(f,.12);hitStop=Math.max(hitStop,.15);shake=Math.max(shake,.6);sfx('crack');toast('本社衛星、支社に格下げ！','good')}
       f.fire-=dt;if(f.fire<=0){const n=f.hp<f.max/2?5:3;for(let k=0;k<n;k++){const from=p.clone();from.x+=(k-(n-1)/2)*2.4;from.z+=2;spawnShot(from,BOSS_WORDS[(Math.random()*BOSS_WORDS.length)|0],'#b8323a',18)}f.fire=f.hp<f.max/2?1.6:2.2}}
     // collide with ship
     if(f.type==='rock'||f.type==='shot'){
-      const rr=f.type==='rock'?f.r+.5:.8;
-      if(Math.abs(p.z)<1.2&&Math.hypot(p.x-sp.x,p.y-sp.y)<rr){hurt(f.dmg,f.label);if(f.type==='shot')kill(f);continue}
+      const rr=f.type==='rock'?f.r+.5:.8, d=Math.hypot(p.x-sp.x,p.y-sp.y);
+      if(Math.abs(p.z)<1.2){
+        f.minD=Math.min(f.minD===undefined?99:f.minD,d);
+        if(d<rr){const before=mental;hurt(f.dmg,f.label);if(mental<before||inv>0)f.touched=true;if(f.type==='shot'){kill(f);continue}}
+      }else if(p.z>=1.2&&!f.gz&&f.minD!==undefined){
+        // passed the ship: a near miss charges the gauge
+        f.gz=true; if(!f.touched&&f.minD<rr+1.3)graze(f,sp.clone().add(new THREE.Vector3(0,1,0)));
+      }
     }
     if(p.z>14){kill(f)}
   }
   if(comboT>0){comboT-=dt;if(comboT<=0){combo=0;$('#combo').classList.remove('on')}}
   hud();
 }
-function kill(f){scene.remove(f.obj);const i=foes.indexOf(f);if(i>=0)foes.splice(i,1)}
+function kill(f){if(f.obj.parent)f.obj.parent.remove(f.obj);if(f.lab&&f.lab.parent)f.lab.parent.remove(f.lab);const i=foes.indexOf(f);if(i>=0)foes.splice(i,1)}
+// one place for every hit: returns true if the run ended
+function damageFoe(f,n){
+  if(!foes.includes(f))return false;
+  f.hp=Math.max(0,f.hp-n);
+  const at=posOf(f).clone();
+  if(f.hp>0){
+    sfx('pop');
+    if(f.type!=='shot')flashFoe(f,f.type==='boss'?.03:f.type==='panel'?.08:.18);
+    return false;
+  }
+  if(f.type==='panel'){
+    sfx('crack'); burst(at,24,0x4f8cff); burst(at,10,0xf0b92b); addScore(f.pts,at);
+    kill(f); hitStop=Math.max(hitStop,.18); shake=Math.max(shake,.7);
+    toast('ソーラーパネル破壊！ 本社に −15','good');
+    if(boss){boss.hp=Math.max(0,boss.hp-15);flashFoe(boss,.08);boss.lean=(boss.lean||0)-f.side*.22;if(boss.hp<=0)return bossDown()}
+    return false;
+  }
+  if(f.type==='boss')return bossDown();
+  sfx(f.type==='shot'?'pop':'boom'); addScore(f.pts,at);
+  burst(at,f.type==='rock'?10:6,f.type==='rock'?0x8a7f74:0xff4fa3);
+  if(f.type==='rock'){hitStop=Math.max(hitStop,.04);shake=Math.max(shake,.3)}
+  else if(f.type==='sat'){hitStop=Math.max(hitStop,.07);shake=Math.max(shake,.45)}
+  kill(f);
+  return false;
+}
+function bossDown(){
+  const b=boss; if(!b)return true;
+  const at=b.obj.position.clone();
+  for(let i=foes.length-1;i>=0;i--)if(foes[i].type==='panel'||foes[i].type==='shot'){const f=foes[i];if(f.type==='shot')burst(posOf(f),4,0xb8323a);kill(f)}
+  addScore(b.pts,at); burst(at,60,0xff4fa3); burst(at,30,0xf6f3ea);
+  sfx('boom'); hitStop=.45; shake=1.2;
+  kill(b); boss=null; hud(true); end(true);
+  return true;
+}
 
 /* ---------- frame ---------- */
 const clk=new THREE.Clock();let camX=0,camY=0;
@@ -426,7 +549,7 @@ function frame(){
   const pa=starGeo.attributes.position;
   for(let i=0;i<STAR_N;i++){let z=pa.getZ(i)+spd*dt;if(z>20)z-=220;pa.setZ(i,z)}
   pa.needsUpdate=true;
-  if(state==='play')update(dt); else {ship.position.y=Math.sin(t*1.5)*.3;ship.rotation.z=Math.sin(t)*.1}
+  if(state==='play'){if(hitStop>0){hitStop-=dt;update(dt*.06)}else update(dt)} else {ship.position.y=Math.sin(t*1.5)*.3;ship.rotation.z=Math.sin(t)*.1}
   const prog=state==='play'||state==='clear'?Math.min(1,elapsed/BOSS_AT):0;
   moon.position.z=-260+prog*150; moon.rotation.y+=dt*.02; earth.rotation.y+=dt*.03;
   flame.scale.set(1,.8+Math.random()*.5,1);
@@ -441,6 +564,9 @@ function frame(){
   renderer.render(scene,camera);
 }
 frame();
+if(location.hash==='#dbg')window.__dbg={start,kidoku,graze,damageFoe,spawnBoss,spawnSat,spawnShot,foes,ship,goal,
+  get state(){return state},get thru(){return thru},set thru(v){thru=v},get boss(){return boss},get score(){return score},
+  get mental(){return mental},set mental(v){mental=v},get grazes(){return grazes},get hitStop(){return hitStop},set elapsed(v){elapsed=v},get elapsed(){return elapsed}};
 })();
 </script>
 </body>
